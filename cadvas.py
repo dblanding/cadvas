@@ -26,8 +26,8 @@ import string
 import math
 import pickle
 import os
-from   Tkinter import *
-from   tkFileDialog import *
+from   tkinter import *
+from   tkinter.filedialog import *
 import Pmw
 from   zooming import Zooming
 import AppShell

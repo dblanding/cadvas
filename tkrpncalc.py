@@ -24,7 +24,7 @@
 
 from __future__ import division
 import sys
-from Tkinter import *
+from tkinter import *
 import math
 
 def but(root, text, row, col, com=None, span=2, clr='darkslateblue', pad=1): 
@@ -127,10 +127,11 @@ class Calculator(Toplevel):
     def pr(self, val):
         """Send value in register to CADvas."""
         # There must be a better way to get this value
-        str_value = `eval('self.'+val+'display.get()')`.strip("'")
+        str_value = repr(eval('self.'+val+'display.get()')).strip("'")
         self.caller.enterfloat(str_value)
         self.keip = False
         self.needrup = True
+        
 
     def keyin(self, c):
         if self.keip:
@@ -150,12 +151,13 @@ class Calculator(Toplevel):
         self.needrup = False
 
     def calc(self, op):
+        pass
         """Arithmetic calculations between x and y registers, then rotate down."""
         try:
             if op == '+/-':
-                self.xdisplay.set(`eval('-'+self.xdisplay.get())`)
+                self.xdisplay.set(repr(eval('-'+self.xdisplay.get())))
             else:
-                x = `eval(self.ydisplay.get()+op+self.xdisplay.get())`
+                x = repr(eval(self.ydisplay.get()+op+self.xdisplay.get()))
                 self.xdisplay.set(x)
                 self.ydisplay.set(self.zdisplay.get())
                 self.zdisplay.set(self.tdisplay.get())
@@ -163,7 +165,7 @@ class Calculator(Toplevel):
             self.needrup = True
         except:
             self.xdisplay.set("ERROR")
-
+        
 
     def func(self, op, in_cnvrt=0, out_cnvrt=0):
         """Evaluate function op then put result in x-register, don't rotate stack.
@@ -188,13 +190,13 @@ class Calculator(Toplevel):
 
     def mm2in(self):
         if self.xdisplay.get():
-            self.xdisplay.set(`eval(self.xdisplay.get()+'/25.4')`)
+            self.xdisplay.set(repr(eval(self.xdisplay.get()+'/25.4')))
             self.keip = False
             self.needrup = True
 
     def in2mm(self):
         if self.xdisplay.get():
-            self.xdisplay.set(`eval(self.xdisplay.get()+'*25.4')`)
+            self.xdisplay.set(repr(eval(self.xdisplay.get()+'*25.4')))
             self.keip = False
             self.needrup = True
 
@@ -245,7 +247,7 @@ class Calculator(Toplevel):
     def putx(self, value):
         if self.needrup:
             self.rotateup(loop=0)
-        self.xdisplay.set(`value`)
+        self.xdisplay.set(repr(value))
         self.keip = False
         self.needrup = True
 

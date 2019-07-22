@@ -10,7 +10,7 @@ created by Doug Hellmann (doughellmann@mindspring.com).
 
 """
 
-from Tkinter import *
+from tkinter import *
 import Pmw
 import sys, string
 

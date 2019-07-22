@@ -1,5 +1,5 @@
 from __future__ import nested_scopes, division
-from Tkinter import *
+from tkinter import *
 from math import log,exp
 
 import operator
@@ -179,7 +179,7 @@ class Zooming(Canvas):
         """canvas scale command, but also updates the transformation. all objects are scaled.
         origin is in canvas coordinates (use world2canvas to convert from world coords if necessary)."""
         if xScale==0 or yScale==0:
-            print "Zooming.scale received scale factor of 0 - ignoring"
+            print("Zooming.scale received scale factor of 0 - ignoring")
             return
 
         for c in self.constraints:
