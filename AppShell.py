@@ -2,12 +2,11 @@
 
 """
 AppShell class provides a GUI application framework.
-AppShell is from the excellent book "Python and Tkinter Programming"
+AppShell is from the book "Python and Tkinter Programming"
 by John E. Grayson.
 
 This is a streamlined adaptation of GuiAppD.py, originally
 created by Doug Hellmann (doughellmann@mindspring.com).
-
 """
 
 from tkinter import *

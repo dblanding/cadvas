@@ -433,7 +433,7 @@ class Draw(AppShell.AppShell):
     usecommandarea  = 0
     appversion      = version
     appname         = 'CADvas'
-    copyright       = 'GPL'
+    copyright       = 'Copyright GPL 2019'
     contactname     = 'Doug Blanding'
     contactemail    = 'dblanding%sgmail%scom' % ('@', '.')
     frameWidth      = 840
@@ -567,7 +567,8 @@ class Draw(AppShell.AppShell):
             import dxf
             dxf.native2dxf(drawdict, file)
         elif fext == '.pkl':
-            pickle.dump(drawdict, open(file, 'w'))
+            with open(file, 'wb') as f:
+                pickle.dump(drawdict, f)
             self.filename = file
         elif not fext:
             print("Please type entire filename, including extension.")
@@ -580,7 +581,8 @@ class Draw(AppShell.AppShell):
             import dxf
             drawdict = dxf.dxf2native(file)
         elif fext == '.pkl':
-            drawdict = pickle.load(open(file))
+            with open(file, 'rb') as f:
+                drawdict = pickle.load(f)
             self.filename = file
         else:
             print("Load files of type {fext} not supported.")
@@ -2257,7 +2259,7 @@ class Draw(AppShell.AppShell):
                 yc = (y0+y1)/2
                 r = (x1-x0)/2
                 a0 = float(self.canvas.itemcget(item, 'start'))
-                a1 = a0+string.atof(self.canvas.itemcget(item, 'extent'))
+                a1 = a0 + float(self.canvas.itemcget(item, 'extent'))
                 a0 = -a0*math.pi/180
                 a1 = -a1*math.pi/180
                 p0 = (xc+r*math.cos(a0), yc+r*math.sin(a0))
