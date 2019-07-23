@@ -1,6 +1,5 @@
-from __future__ import nested_scopes, division
 from tkinter import *
-from math import log,exp
+from math import log, exp
 
 import operator
 
