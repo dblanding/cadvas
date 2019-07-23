@@ -34,7 +34,7 @@ from   toolbarbutton import ToolBarButton
 import tkrpncalc
 
 version = '0.3.0'
-Date = 7/22/2019
+date = 'July 2019'
 
 #===========================================================================
 # 
@@ -433,7 +433,7 @@ class Draw(AppShell.AppShell):
     usecommandarea  = 0
     appversion      = version
     appname         = 'CADvas'
-    copyright       = 'Copyright GPL 2019'
+    copyright       = 'Copyright GPL %s' % date
     contactname     = 'Doug Blanding'
     contactemail    = 'dblanding%sgmail%scom' % ('@', '.')
     frameWidth      = 840
