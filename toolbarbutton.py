@@ -1,5 +1,5 @@
 from tkinter import *
-import string, time
+import time
 
 class ToolBarButton(Label):
     def __init__(self, top, parent, tag=None, image=None, command=None,

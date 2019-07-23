@@ -12,7 +12,7 @@ created by Doug Hellmann (doughellmann@mindspring.com).
 
 from tkinter import *
 import Pmw
-import sys, string
+import sys
 
 
 class AppShell(Pmw.MegaWidget):        

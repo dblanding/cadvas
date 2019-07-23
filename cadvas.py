@@ -22,7 +22,6 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-import string
 import math
 import pickle
 import os
@@ -685,7 +684,7 @@ class Draw(AppShell.AppShell):
                 len = math.pi*2*self.cc_dict[elem][1]/self.unitscale
             elif elem in self.ga_dict:
                 pc, r, a0, a1 = self.ga_dict[elem]
-                ang = string.atof(self.canvas.itemcget(elem, 'extent'))
+                ang = float(self.canvas.itemcget(elem, 'extent'))
                 len = math.pi*r*ang/180/self.unitscale
             if len:
                 self.launch_calc()
@@ -2074,7 +2073,7 @@ class Draw(AppShell.AppShell):
     def enterfloat(self, str_value):
         """Receive string value (from calculator) and do the right thing."""
         if str_value:
-            val = string.atof(str_value)
+            val = float(str_value)
             self.float_stack.append(val)
             func = 'self.%s()' % self.op
             eval(func)
@@ -2102,12 +2101,12 @@ class Draw(AppShell.AppShell):
                 list = text.split(',')
                 if len(list) == 1:
                     val = list[0]
-                    self.float_stack.append(string.atof(val))
+                    self.float_stack.append(float(val))
                 elif len(list) == 2 and self.sel_mode == 'pnt':
                     # user entered points are already in ECS units
                     x, y = list
-                    x = string.atof(x) * self.unitscale
-                    y = string.atof(y) * self.unitscale
+                    x = float(x) * self.unitscale
+                    y = float(y) * self.unitscale
                     self.pt_stack.append((x, y))
             func = 'self.%s()' % self.op
             eval(func)
@@ -2256,7 +2255,7 @@ class Draw(AppShell.AppShell):
                 xc = (x0+x1)/2
                 yc = (y0+y1)/2
                 r = (x1-x0)/2
-                a0 = string.atof(self.canvas.itemcget(item, 'start'))
+                a0 = float(self.canvas.itemcget(item, 'start'))
                 a1 = a0+string.atof(self.canvas.itemcget(item, 'extent'))
                 a0 = -a0*math.pi/180
                 a1 = -a1*math.pi/180
