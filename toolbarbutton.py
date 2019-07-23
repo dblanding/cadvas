@@ -11,7 +11,7 @@ class ToolBarButton(Label):
         self.bg = bg 
         self.activebackground = activebackground
         if image != None:
-            if string.splitfields(image, '.')[1] == 'bmp':
+            if image.split('.')[1] == 'bmp':
                 self.Icon = BitmapImage(file='icons/%s' % image)
             else:
                 self.Icon = PhotoImage(file='icons/%s' % image)
