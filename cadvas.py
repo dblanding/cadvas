@@ -704,7 +704,7 @@ class Draw(AppShell.AppShell):
  
     def createBase(self):
         self.toolbar = self.createcomponent('toolbar', (), None,
-                  Frame, (self.interior(),), background="gray90")
+                  Frame, (self.interior(),), background="gray80")
         self.toolbar.pack(fill=X)
 
         self.canvas = self.createcomponent('canvas', (), None,
@@ -738,6 +738,13 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('File', 'separator')
         self.menuBar.addmenuitem('File', 'command', 'Exit program',
                                  label='Exit', command=self.quit)
+        self.menuBar.addmenu('Edit', 'Undo / Redo')
+        self.menuBar.addmenuitem('Edit', 'command', 'Undo',
+                                 label='Undo',
+                                 command=self.undo)
+        self.menuBar.addmenuitem('Edit', 'command', 'Redo',
+                                 label='Redo',
+                                 command=self.redo)
         self.menuBar.addmenu('View', 'View commands')
         self.menuBar.addmenuitem('View', 'command', 'Fit geometry to screen',
                                  label='Fit', command=self.view_fit)
@@ -803,7 +810,6 @@ class Draw(AppShell.AppShell):
         self.func      = {}
         self.transFunc = {}
         for key, balloon in [
-            ('sep',     ''),
             ('hcl',     'horizontal construction line'),
             ('vcl',     'vertical construction line'),
             ('hvcl',    'horz & vert construction line'),
@@ -2043,6 +2049,12 @@ class Draw(AppShell.AppShell):
         self.del_all_g()
         self.del_all_d()
         self.del_all_t()
+
+    def undo(self):
+        pass
+
+    def redo(self):
+        pass
 
     #=======================================================================
     # Event handling
