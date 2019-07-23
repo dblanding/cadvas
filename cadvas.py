@@ -33,7 +33,8 @@ import AppShell
 from   toolbarbutton import ToolBarButton
 import tkrpncalc
 
-version = '0.2.2'
+version = '0.3.0'
+Date = 7/22/2019
 
 #===========================================================================
 # 
