@@ -47,7 +47,7 @@ class Calculator(Toplevel):
     def __init__(self, caller=None):
         Toplevel.__init__(self)
         self.caller = caller    # ref to Draw instance
-        self.title('RPN Calc')
+        self.title('RPN Calculator')
         self.protocol("WM_DELETE_WINDOW", self.quit)
         #self.resizable(width=0, height=0)
         if caller:
