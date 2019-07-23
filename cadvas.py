@@ -2177,8 +2177,8 @@ class Draw(AppShell.AppShell):
                                    self.quitpopup())).pack()
         frame.pack()
         size, x, y = self.winfo_toplevel().winfo_geometry().split('+')
-        x = string.atoi(x)
-        y = string.atoi(y)
+        x = int(x)
+        y = int(y)
         if self.allow_list:
             self.popup.geometry('60x90+%s+%s' % (x+event.x, y+event.y+30))
         else:
