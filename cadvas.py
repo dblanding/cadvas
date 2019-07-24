@@ -445,7 +445,7 @@ class Draw(AppShell.AppShell):
     rubber = None           # ID of (temporary) rubber element
     rtext = None            # ID of (temporary) rubber text
     sel_boxID = None        # ID of (temporary) selection box
-    op = ''                 # current operation
+    op = ''                 # current CAD operation (create or modify)
     op_stack = []
     text_entry_enable = 0
     text = ''
@@ -463,7 +463,7 @@ class Draw(AppShell.AppShell):
     ga_dict = {}            # all geometry arcs
     dl_dict = {}            # all linear dimensions
     tx_dict = {}            # all text
-    cl_list_prev = []       # all construction lines (before last op)
+    cl_tupl_prev = ()       # all construction lines (before last op)
     cc_dict_prev = {}       # all construction circles (before last op)
     gl_dict_prev = {}       # all geometry lines (before last op)
     gc_dict_prev = {}       # all geometry circles (before last op)
@@ -2070,7 +2070,7 @@ class Draw(AppShell.AppShell):
         """
         if self.undo_stack:
             mod_data = self.undo_stack.pop()
-            self.redo_stack.append(mod_data)
+            self.redo_stack.append({'cl': self.cl_list})
             print("in undo: mod data = ", mod_data)
             if 'cl' in mod_data.keys():
                 self.cl_list = mod_data['cl']
@@ -2081,7 +2081,7 @@ class Draw(AppShell.AppShell):
     def redo(self):
         if self.redo_stack:
             mod_data = self.redo_stack.pop()
-            self.undo_stack.append(mod_data)
+            self.undo_stack.append({'cl': self.cl_list})
             print("in redo: mod data = ", mod_data)
             if 'cl' in mod_data.keys():
                 self.cl_list = mod_data['cl']
@@ -2090,19 +2090,29 @@ class Draw(AppShell.AppShell):
             print("No more Redo steps available.")
 
     def save_delta(self):
-        """Record changes of drawing elements on undo stack.
+        """After each op, save changes of drawing elements on undo stack.
 
-        For each element type that has changed,
-        put dict of changed data on undo stack.
-        Replace previous data with current data.
+        Drawing changes are stored in a dict with a key ('cl', 'cc',
+        'gl', 'gc','dl', 'tx') for each drawing element type. If the only
+        change was to add some construction lines, then the only item
+        in the dict will be one key:value pair where key = 'cl' and the
+        value will be a tuple containing the coordinates for all the
+        construction lines on the drawing at that time.
+        If there have been no changes for a drawing element type, that key
+        and value will not be present in the dict.
+        For example, if there is no 'tx' key in the dict, then it can be
+        inferred that there have been no text changes in the drawing. The
+        dict is appended onto the undo stack, and the corresponding value
+        for self.data_prev is updated with the current data. A tuple is
+        used to guard against the problem with lists, where occasionally
+        we get burned when two variable names are intended to be different
+        but are actually pointing to the same list. Ouch!
         """
-        delta = {}
-        print('in save_data: cl_list = ', self.cl_list)
-        print('in save_data: cl_list_prev = ', self.cl_list_prev)
-        if self.cl_list != self.cl_list_prev:
-            delta['cl'] = self.cl_list_prev
-            self.cl_list_prev = self.cl_list
-        ''' Start out by just doing this for clines...
+        # Start by trying to get this working with construction lines...
+        if not tuple(self.cl_list) == self.cl_tupl_prev:
+            self.undo_stack.append({'cl': self.cl_tupl_prev})
+            self.cl_tupl_prev = tuple(self.cl_list)
+        '''
         if self.cc_dict != self.cc_dict_prev:
             delta['cc'] = self.cc_dict_prev
             self.cc_dict_prev = self.cc_dict
@@ -2122,9 +2132,7 @@ class Draw(AppShell.AppShell):
             delta['tx'] = self.tx_dict_prev
             self.tx_dict_prev = self.tx_dict
         '''
-        if delta:
-            self.undo_stack.append(delta)
-            print('delta = ', delta)
+
 
     #=======================================================================
     # Event handling
