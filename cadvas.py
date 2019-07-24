@@ -912,10 +912,10 @@ class Draw(AppShell.AppShell):
                 if self.rubber:
                     self.canvas.delete(self.rubber)
                     self.rubber = None
-                cl = self.canvas.create_line(p1[0], p1[1], p2[0], p2[1],
-                                             fill='magenta', tags='c')
-                self.canvas.tag_lower(cl)
-                self.cl_dict[cl] = cline
+                tkid = self.canvas.create_line(p1[0], p1[1], p2[0], p2[1],
+                                               fill='magenta', tags='c')
+                self.canvas.tag_lower(tkid)
+                self.cl_dict[tkid] = cline
                 if add2list:    # If regen, we don't want to add to list
                     self.cl_list.append(cline)
 
@@ -1301,15 +1301,15 @@ class Draw(AppShell.AppShell):
         p1, p2 = coords
         xa, ya = self.ep2cp(p1)
         xb, yb = self.ep2cp(p2)
-        id = self.canvas.create_line(xa, ya, xb, yb,
-                                     fill=color, tags=tag, arrow=arrow)
-        return id
+        tkid = self.canvas.create_line(xa, ya, xb, yb,
+                                       fill=color, tags=tag, arrow=arrow)
+        return tkid
 
     def gline_gen(self, coords):
         """Create line segment between two pts in engineering (mm) coords.
         Store coords in gl_dict."""
-        gl = self.line_gen(coords)
-        self.gl_dict[gl] = coords
+        tkid = self.line_gen(coords)
+        self.gl_dict[tkid] = coords
         
     def line(self, p1=None):
         '''Create line segment between 2 points. Enable 'rubber line' mode'''
@@ -1419,13 +1419,13 @@ class Draw(AppShell.AppShell):
             else:
                 color = 'white'
                 tag = 'g'
-            cir = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                          outline=color, tags=tag)
+            tkid = self.canvas.create_oval(x-r, y-r, x+r, y+r,
+                                           outline=color, tags=tag)
             if tag == 'g':
-                self.gc_dict[cir] = coords
+                self.gc_dict[tkid] = coords
             elif tag == 'c':
-                self.cc_dict[cir] = coords
-                self.canvas.tag_lower(cir)
+                self.cc_dict[tkid] = coords
+                self.canvas.tag_lower(tkid)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
@@ -1541,10 +1541,10 @@ class Draw(AppShell.AppShell):
                                                      style='arc', tags=tag,
                                                      outline=color)
         else:
-            ga = self.canvas.create_arc(x1, y1, x2, y2,
-                                        start=a0, extent=ext, style='arc',
-                                        outline=color, tags=tag)
-            self.ga_dict[ga] = coords
+            tkid = self.canvas.create_arc(x1, y1, x2, y2,
+                                          start=a0, extent=ext, style='arc',
+                                          outline=color, tags=tag)
+            self.ga_dict[tkid] = coords
 
     def slot(self, p1=None):
         if not self.pt_stack:
