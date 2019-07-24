@@ -2071,7 +2071,6 @@ class Draw(AppShell.AppShell):
         if self.undo_stack:
             mod_data = self.undo_stack.pop()
             self.redo_stack.append({'cl': self.cl_list})
-            print("in undo: mod data = ", mod_data)
             if 'cl' in mod_data.keys():
                 self.cl_list = mod_data['cl']
                 self.regen_all_cl()
@@ -2079,10 +2078,13 @@ class Draw(AppShell.AppShell):
             print("No more Undo steps available.")
 
     def redo(self):
+        """Pop data off redo stack and put it on undo stack.
+
+        Regenerate changed data.
+        """
         if self.redo_stack:
             mod_data = self.redo_stack.pop()
             self.undo_stack.append({'cl': self.cl_list})
-            print("in redo: mod data = ", mod_data)
             if 'cl' in mod_data.keys():
                 self.cl_list = mod_data['cl']
                 self.regen_all_cl()
