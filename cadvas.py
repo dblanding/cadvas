@@ -463,6 +463,15 @@ class Draw(AppShell.AppShell):
     ga_dict = {}            # all geometry arcs
     dl_dict = {}            # all linear dimensions
     tx_dict = {}            # all text
+    cl_list_prev = []       # all construction lines (before last op)
+    cc_dict_prev = {}       # all construction circles (before last op)
+    gl_dict_prev = {}       # all geometry lines (before last op)
+    gc_dict_prev = {}       # all geometry circles (before last op)
+    ga_dict_prev = {}       # all geometry arcs (before last op)
+    dl_dict_prev = {}       # all linear dimensions (before last op)
+    tx_dict_prev = {}       # all text (before last op)
+    undo_stack = []         # list of dicts of drawing element changes
+    redo_stack = []         # list of dicts popped off undo_stack
     filename = None         # name of file currently loaded (or saved as)
     dimgap = 10             # extension line gap (in canvas units) 
     dimcolor = 'red'        # color of dimensions
@@ -2050,11 +2059,72 @@ class Draw(AppShell.AppShell):
         self.del_all_d()
         self.del_all_t()
 
+    #=======================================================================
+    # Undo / Redo
+    #=======================================================================
+
     def undo(self):
-        pass
+        """Pop data off undo stack and put it on redo stack.
+
+        Regenerate changed data.
+        """
+        if self.undo_stack:
+            mod_data = self.undo_stack.pop()
+            self.redo_stack.append(mod_data)
+            print("in undo: mod data = ", mod_data)
+            if 'cl' in mod_data.keys():
+                self.cl_list = mod_data['cl']
+                self.regen_all_cl()
+        else:
+            print("No more Undo steps available.")
 
     def redo(self):
-        pass
+        if self.redo_stack:
+            mod_data = self.redo_stack.pop()
+            self.undo_stack.append(mod_data)
+            print("in redo: mod data = ", mod_data)
+            if 'cl' in mod_data.keys():
+                self.cl_list = mod_data['cl']
+                self.regen_all_cl()
+        else:
+            print("No more Redo steps available.")
+
+    def save_delta(self):
+        """Record changes of drawing elements on undo stack.
+
+        For each element type that has changed,
+        put dict of changed data on undo stack.
+        Replace previous data with current data.
+        """
+        delta = {}
+        print('in save_data: cl_list = ', self.cl_list)
+        print('in save_data: cl_list_prev = ', self.cl_list_prev)
+        if self.cl_list != self.cl_list_prev:
+            delta['cl'] = self.cl_list_prev
+            self.cl_list_prev = self.cl_list
+        ''' Start out by just doing this for clines...
+        if self.cc_dict != self.cc_dict_prev:
+            delta['cc'] = self.cc_dict_prev
+            self.cc_dict_prev = self.cc_dict
+        if self.gl_dict != self.gl_dict_prev:
+            delta['gl'] = self.gl_dict_prev
+            self.gl_dict_prev = self.gl_dict
+        if self.gc_dict != self.gc_dict_prev:
+            delta['gc'] = self.gc_dict_prev
+            self.gc_dict_prev = self.gc_dict
+        if self.ga_dict != self.ga_dict_prev:
+            delta['ga'] = self.ga_dict_prev
+            self.ga_dict_prev = self.ga_dict
+        if self.dl_dict != self.dl_dict_prev:
+            delta['dl'] = self.dl_dict_prev
+            self.dl_dict_prev = self.dl_dict
+        if self.tx_dict != self.tx_dict_prev:
+            delta['tx'] = self.tx_dict_prev
+            self.tx_dict_prev = self.tx_dict
+        '''
+        if delta:
+            self.undo_stack.append(delta)
+            print('delta = ', delta)
 
     #=======================================================================
     # Event handling
@@ -2071,7 +2141,9 @@ class Draw(AppShell.AppShell):
         if self.catch_pnt:
             self.canvas.delete(self.catch_pnt)
             self.catch_pnt = None
-        self.op = ''
+        if self.op:
+            self.save_delta()
+            self.op = ''
         self.sel_box_crnr = None
         self.canvas.delete(self.sel_boxID)
         self.sel_boxID = None
