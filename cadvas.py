@@ -457,14 +457,15 @@ class Draw(AppShell.AppShell):
     sel_box_crnr = None     # first corner of selection box, if any
     cl_list = []            # all construction lines
     cl_dict = {}            # construction lines that fit on canvas
-    cc_dict = {}            # all construction circles
+    cc_list = []            # all construction circles
+    cc_dict = {}            # all construction circles, by tkid
     gl_dict = {}            # all geometry lines
     gc_dict = {}            # all geometry circles
     ga_dict = {}            # all geometry arcs
     dl_dict = {}            # all linear dimensions
     tx_dict = {}            # all text
     cl_tupl_prev = ()       # all construction lines (before last op)
-    cc_dict_prev = {}       # all construction circles (before last op)
+    cc_tupl_prev = ()       # all construction circles (before last op)
     gl_dict_prev = {}       # all geometry lines (before last op)
     gc_dict_prev = {}       # all geometry circles (before last op)
     ga_dict_prev = {}       # all geometry arcs (before last op)
@@ -2070,10 +2071,11 @@ class Draw(AppShell.AppShell):
         """
         if self.undo_stack:
             mod_data = self.undo_stack.pop()
-            self.redo_stack.append({'cl': self.cl_list})
+            self.redo_stack.append(mod_data)
             if 'cl' in mod_data.keys():
-                self.cl_list = mod_data['cl']
+                self.cl_list = list(mod_data['cl'])
                 self.regen_all_cl()
+            
         else:
             print("No more Undo steps available.")
 
@@ -2092,7 +2094,7 @@ class Draw(AppShell.AppShell):
             print("No more Redo steps available.")
 
     def save_delta(self):
-        """After each op, save changes of drawing elements on undo stack.
+        """After an op, save drawing element changes on undo stack.
 
         Drawing changes are stored in a dict with a key ('cl', 'cc',
         'gl', 'gc','dl', 'tx') for each drawing element type. If the only
@@ -2110,14 +2112,18 @@ class Draw(AppShell.AppShell):
         we get burned when two variable names are intended to be different
         but are actually pointing to the same list. Ouch!
         """
-        # Start by trying to get this working with construction lines...
+        # Now try to get it working with both c lines & circles...
+        dd = {}  # for drawing element types that changed, here are prev vals
         if not tuple(self.cl_list) == self.cl_tupl_prev:
-            self.undo_stack.append({'cl': self.cl_tupl_prev})
+            dd['cl'] = self.cl_tupl_prev
             self.cl_tupl_prev = tuple(self.cl_list)
+        if not tuple(self.cc_list) == self.cc_tupl_prev:
+            dd['cl'] = self.cl_tupl_prev
+            self.cc_tupl_prev = tuple(self.cc_dict)
+        self.undo_stack.append(dd)
+        print(dd)
+
         '''
-        if self.cc_dict != self.cc_dict_prev:
-            delta['cc'] = self.cc_dict_prev
-            self.cc_dict_prev = self.cc_dict
         if self.gl_dict != self.gl_dict_prev:
             delta['gl'] = self.gl_dict_prev
             self.gl_dict_prev = self.gl_dict
@@ -2134,7 +2140,7 @@ class Draw(AppShell.AppShell):
             delta['tx'] = self.tx_dict_prev
             self.tx_dict_prev = self.tx_dict
         '''
-
+        
 
     #=======================================================================
     # Event handling
