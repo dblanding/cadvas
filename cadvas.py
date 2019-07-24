@@ -2070,12 +2070,17 @@ class Draw(AppShell.AppShell):
         Regenerate changed data.
         """
         if self.undo_stack:
-            mod_data = self.undo_stack.pop()
-            self.redo_stack.append(mod_data)
-            if 'cl' in mod_data.keys():
-                self.cl_list = list(mod_data['cl'])
-                self.regen_all_cl()
-            
+            mod_data = self.undo_stack.pop()  # get previous config
+            dd = {}  # dict to hold current config
+            if 'cl' in mod_data.keys():  # if there were changes in 'cl'
+                dd['cl'] = tuple(self.cl_list)  # grab current 'cl' config
+                self.cl_list = list(mod_data['cl'])  # revert curr config
+                self.regen_all_cl()  # regenerate reverted config
+            if 'cc' in mod_data.keys():  # if there were changes in 'cc'
+                dd['cc'] = tuple(self.cc_list)  # grab current 'cc' config
+                self.cc_list = list(mod_data['cc'])  # revert curr config
+                self.regen_all_cc()  # regenerate reverted config
+            self.redo_stack.append(dd)  # put current config on redo stack
         else:
             print("No more Undo steps available.")
 
@@ -2114,13 +2119,13 @@ class Draw(AppShell.AppShell):
         """
         # Now try to get it working with both c lines & circles...
         dd = {}  # for drawing element types that changed, here are prev vals
-        if not tuple(self.cl_list) == self.cl_tupl_prev:
-            dd['cl'] = self.cl_tupl_prev
-            self.cl_tupl_prev = tuple(self.cl_list)
-        if not tuple(self.cc_list) == self.cc_tupl_prev:
-            dd['cl'] = self.cl_tupl_prev
-            self.cc_tupl_prev = tuple(self.cc_dict)
-        self.undo_stack.append(dd)
+        if tuple(self.cl_list) != self.cl_tupl_prev:
+            dd['cl'] = self.cl_tupl_prev  # grab previous cl list as tuple
+            self.cl_tupl_prev = tuple(self.cl_list)  # then update it
+        if tuple(self.cc_list) != self.cc_tupl_prev:
+            dd['cl'] = self.cl_tupl_prev  # grab previous cc list as tuple
+            self.cc_tupl_prev = tuple(self.cc_dict)  # Then update it
+        self.undo_stack.append(dd)  # append previous config to undo stack
         print(dd)
 
         '''
