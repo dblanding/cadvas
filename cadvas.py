@@ -457,7 +457,6 @@ class Draw(AppShell.AppShell):
     sel_box_crnr = None     # first corner of selection box, if any
     cl_list = []            # all construction lines
     cl_dict = {}            # construction lines that fit on canvas
-    cc_list = []            # all construction circles
     cc_dict = {}            # all construction circles, by tkid
     gl_dict = {}            # all geometry lines
     gc_dict = {}            # all geometry circles
@@ -941,6 +940,14 @@ class Draw(AppShell.AppShell):
         self.cl_dict.clear()
         for cline in self.cl_list:
             self.cline_gen(cline, add2list=0)   # Must pass add2list=0 here
+
+    def regen_all_cc(self, event=None):
+        """Delete existing c_circles and regenerate c_circles in cc_list."""
+        for item in self.cc_dict.keys():
+            self.canvas.delete(item)
+        self.cc_dict.clear()
+        for ccirc in self.cc_list:
+            self.circ_gen(ccirc, constr=1)
 
     def hcl(self, pnt=None):
         """Create horizontal construction line from one point or y value."""
@@ -2071,15 +2078,20 @@ class Draw(AppShell.AppShell):
         """
         if self.undo_stack:
             mod_data = self.undo_stack.pop()  # get previous config
-            dd = {}  # dict to hold current config
+            dd = {}  # data dict to hold current config
             if 'cl' in mod_data.keys():  # if there were changes in 'cl'
                 dd['cl'] = tuple(self.cl_list)  # grab current 'cl' config
                 self.cl_list = list(mod_data['cl'])  # revert curr config
                 self.regen_all_cl()  # regenerate reverted config
             if 'cc' in mod_data.keys():  # if there were changes in 'cc'
-                dd['cc'] = tuple(self.cc_list)  # grab current 'cc' config
-                self.cc_list = list(mod_data['cc'])  # revert curr config
-                self.regen_all_cc()  # regenerate reverted config
+                cc_list = self.cc_dict.values()  # curr 'cc' config
+                dd['cc'] = tuple(cc_list)  # grab current 'cc' config
+                # revert curr config
+                for item in self.cc_dict.keys():
+                    self.canvas.delete(item)
+                self.cc_dict.clear()
+                for coords in mod_data['cc']:
+                    self.circ_gen(coords, constr=1)
             self.redo_stack.append(dd)  # put current config on redo stack
         else:
             print("No more Undo steps available.")
@@ -2099,35 +2111,62 @@ class Draw(AppShell.AppShell):
             print("No more Redo steps available.")
 
     def save_delta(self):
-        """After an op, save drawing element changes on undo stack.
+        """After an op, put previous drawing config on undo stack.
 
-        Drawing changes are stored in a dict with a key ('cl', 'cc',
-        'gl', 'gc','dl', 'tx') for each drawing element type. If the only
-        change was to add some construction lines, then the only item
-        in the dict will be one key:value pair where key = 'cl' and the
-        value will be a tuple containing the coordinates for all the
-        construction lines on the drawing at that time.
+        All the drawing elements are stored in dicts, grouped by 'type',
+        with the following keys:
+        'cl'    construction line
+        'cc'    construction circle
+        'gl'    geometry line
+        'gc'    geometry circle
+        'dl'    linear dimension
+        'tx'    text
+        At various points in time, as the drawing configuration changes,
+        each of these dictionaries will change. In order to be able to
+        undo and redo the most recent change, it is neccesary to keep
+        track of the difference between the current configuration (curr)
+        and the configuration just previous (prev). The curr configuration
+        is stored in files named like: 'self.cc_dict' in which the key is
+        the ID number assigned by the Tk canvas and the value is a tuple
+        containing the coordinates of the drawing element. The prev
+        configuration is stored in files named like: self.cc_tupl_prev
+        containing a tuple of tuples contining the coordinates of all the
+        drawing elements of that type. Typically, the only difference
+        between (curr) and (prev) might be just one or two types of drawing
+        element.
+        
+        For example, if the previous CAD op was to add a slot, only 'gl'
+        and 'gc' will change. In this case, a mod_dict with just two
+        key:value pairs is then put onto self.undo_stack.
+        
+        mod_dict = {'gl': (prev config), 'gc: (prev config)}
+        
         If there have been no changes for a drawing element type, that key
-        and value will not be present in the dict.
-        For example, if there is no 'tx' key in the dict, then it can be
-        inferred that there have been no text changes in the drawing. The
-        dict is appended onto the undo stack, and the corresponding value
-        for self.data_prev is updated with the current data. A tuple is
-        used to guard against the problem with lists, where occasionally
+        and value will not be present. For example, if there is no 'tx' key
+        in the dict, then it can be inferred that there have been no text
+        changes in the drawing between prev and curr.
+
+        In this method, the mod_dict (dd) is appended onto the undo stack
+        and the corresponding values for self.data_prev are updated with
+        the current data.
+        As an aside, tuples (rather than lists) are used to store the prev
+        config in order to guard against the problem where occasionally
         we get burned when two variable names are intended to be different
         but are actually pointing to the same list. Ouch!
         """
-        # Now try to get it working with both c lines & circles...
-        dd = {}  # for drawing element types that changed, here are prev vals
+        
+        # Look for changes between prev and curr
+        dd = {}  # prev values of drawing element types that changed
         if tuple(self.cl_list) != self.cl_tupl_prev:
-            dd['cl'] = self.cl_tupl_prev  # grab previous cl list as tuple
-            self.cl_tupl_prev = tuple(self.cl_list)  # then update it
-        if tuple(self.cc_list) != self.cc_tupl_prev:
-            dd['cl'] = self.cl_tupl_prev  # grab previous cc list as tuple
-            self.cc_tupl_prev = tuple(self.cc_dict)  # Then update it
-        self.undo_stack.append(dd)  # append previous config to undo stack
-        print(dd)
-
+            dd['cl'] = self.cl_tupl_prev
+            self.cl_tupl_prev = tuple(self.cl_list)  # update prev to curr
+        cc_list = self.cc_dict.values()  # grab curr config
+        if tuple(cc_list) != self.cc_tupl_prev:
+            dd['cc'] = self.cc_tupl_prev
+            self.cc_tupl_prev = tuple(cc_list)  # update prev to curr
+        if dd:
+            self.undo_stack.append(dd)  # append prev config to undo stack
+        
         '''
         if self.gl_dict != self.gl_dict_prev:
             delta['gl'] = self.gl_dict_prev
