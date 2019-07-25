@@ -2075,35 +2075,47 @@ class Draw(AppShell.AppShell):
         """Pop prev off undo, Put curr on redo, regen prev config"""
         
         if self.undo_stack:
-            prev_data = self.undo_stack.pop()
+            undo_data = self.undo_stack.pop()
             dd = {}  # data dict to hold curr config
-            if 'cl' in prev_data.keys():  # if changed
+            if 'cl' in undo_data.keys():  # if changed
                 dd['cl'] = tuple(self.cl_list)
                 # revert to prev
-                self.cl_list = list(prev_data['cl'])  
+                self.cl_list = list(undo_data['cl'])  
                 self.regen_all_cl()  # regenerate
-            if 'cc' in prev_data.keys():
+            if 'cc' in undo_data.keys():
                 cc_list = self.cc_dict.values()  # grab curr config
                 dd['cc'] = tuple(cc_list)
-                # clear changed & revert to prev
+                # clear changed & revert to undo (prev)
                 for item in self.cc_dict.keys():
                     self.canvas.delete(item)
                 self.cc_dict.clear()
-                for coords in prev_data['cc']:
+                for coords in undo_data['cc']:
                     self.circ_gen(coords, constr=1)
             self.redo_stack.append(dd)  # put curr config on redo stack
         else:
             print("No more Undo steps available.")
 
     def redo(self):
-        """Pop data off undo, put curr on redo, regen new config"""
+        """Pop data off redo, put curr on undo, regen new config"""
 
         if self.redo_stack:
-            mod_data = self.redo_stack.pop()
-            self.undo_stack.append({'cl': self.cl_list})
-            if 'cl' in mod_data.keys():
-                self.cl_list = mod_data['cl']
-                self.regen_all_cl()
+            redo_data = self.redo_stack.pop()
+            dd = {}  # data dict to hold curr config
+            if 'cl' in redo_data.keys():
+                dd['cl'] = tuple(self.cl_list)
+                # revert to prev
+                self.cl_list = list(redo_data['cl'])
+                self.regen_all_cl()  # regenerate
+            if 'cc' in redo_data.keys():
+                cc_list = self.cc_dict.values()  # grab curr config
+                dd['cc'] = tuple(cc_list)
+                # clear changed & revert to redo
+                for item in self.cc_dict.keys():
+                    self.canvas.delete(item)
+                self.cc_dict.clear()
+                for coords in redo_data['cc']:
+                    self.circ_gen(coords, constr=1)
+            self.undo_stack.append(dd)  # put curr config on undo stack
         else:
             print("No more Redo steps available.")
 
