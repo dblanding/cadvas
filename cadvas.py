@@ -2072,35 +2072,32 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def undo(self):
-        """Pop data off undo stack and put it on redo stack.
-
-        Regenerate changed data.
-        """
+        """Pop prev off undo, Put curr on redo, regen prev config"""
+        
         if self.undo_stack:
-            mod_data = self.undo_stack.pop()  # get previous config
-            dd = {}  # data dict to hold current config
-            if 'cl' in mod_data.keys():  # if there were changes in 'cl'
-                dd['cl'] = tuple(self.cl_list)  # grab current 'cl' config
-                self.cl_list = list(mod_data['cl'])  # revert curr config
-                self.regen_all_cl()  # regenerate reverted config
-            if 'cc' in mod_data.keys():  # if there were changes in 'cc'
-                cc_list = self.cc_dict.values()  # curr 'cc' config
-                dd['cc'] = tuple(cc_list)  # grab current 'cc' config
-                # revert curr config
+            prev_data = self.undo_stack.pop()
+            dd = {}  # data dict to hold curr config
+            if 'cl' in prev_data.keys():  # if changed
+                dd['cl'] = tuple(self.cl_list)
+                # revert to prev
+                self.cl_list = list(prev_data['cl'])  
+                self.regen_all_cl()  # regenerate
+            if 'cc' in prev_data.keys():
+                cc_list = self.cc_dict.values()  # grab curr config
+                dd['cc'] = tuple(cc_list)
+                # clear changed & revert to prev
                 for item in self.cc_dict.keys():
                     self.canvas.delete(item)
                 self.cc_dict.clear()
-                for coords in mod_data['cc']:
+                for coords in prev_data['cc']:
                     self.circ_gen(coords, constr=1)
-            self.redo_stack.append(dd)  # put current config on redo stack
+            self.redo_stack.append(dd)  # put curr config on redo stack
         else:
             print("No more Undo steps available.")
 
     def redo(self):
-        """Pop data off redo stack and put it on undo stack.
+        """Pop data off undo, put curr on redo, regen new config"""
 
-        Regenerate changed data.
-        """
         if self.redo_stack:
             mod_data = self.redo_stack.pop()
             self.undo_stack.append({'cl': self.cl_list})
