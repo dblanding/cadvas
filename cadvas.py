@@ -457,7 +457,7 @@ class Draw(AppShell.AppShell):
     sel_box_crnr = None     # first corner of selection box, if any
     cl_list = []            # all construction lines
     cl_dict = {}            # construction lines that fit on canvas
-    cc_dict = {}            # all construction circles, by tkid
+    cc_dict = {}            # all construction circles
     gl_dict = {}            # all geometry lines
     gc_dict = {}            # all geometry circles
     ga_dict = {}            # all geometry arcs
@@ -465,11 +465,11 @@ class Draw(AppShell.AppShell):
     tx_dict = {}            # all text
     cl_tupl_prev = ()       # all construction lines (before last op)
     cc_tupl_prev = ()       # all construction circles (before last op)
-    gl_dict_prev = {}       # all geometry lines (before last op)
-    gc_dict_prev = {}       # all geometry circles (before last op)
-    ga_dict_prev = {}       # all geometry arcs (before last op)
-    dl_dict_prev = {}       # all linear dimensions (before last op)
-    tx_dict_prev = {}       # all text (before last op)
+    gl_tupl_prev = ()       # all geometry lines (before last op)
+    gc_tupl_prev = ()       # all geometry circles (before last op)
+    ga_tupl_prev = ()       # all geometry arcs (before last op)
+    dl_tupl_prev = ()       # all linear dimensions (before last op)
+    tx_tupl_prev = ()       # all text (before last op)
     undo_stack = []         # list of dicts of drawing element changes
     redo_stack = []         # list of dicts popped off undo_stack
     filename = None         # name of file currently loaded (or saved as)
@@ -620,6 +620,7 @@ class Draw(AppShell.AppShell):
         self.units = drawdict.get('units', 'mm')
         self.set_units(self.units)
         self.view_fit()
+        self.save_delta()
 
     def close(self):
         self.quit()
@@ -2091,6 +2092,51 @@ class Draw(AppShell.AppShell):
                 self.cc_dict.clear()
                 for coords in undo_data['cc']:
                     self.circ_gen(coords, constr=1)
+            if 'gl' in undo_data.keys():
+                gl_list = self.gl_dict.values()  # grab curr config
+                dd['gl'] = tuple(gl_list)
+                # clear changed & revert to undo (prev)
+                for item in self.gl_dict.keys():
+                    self.canvas.delete(item)
+                self.gl_dict.clear()
+                for coords in undo_data['gl']:
+                    self.gline_gen(coords)
+            if 'gc' in undo_data.keys():
+                gc_list = self.gc_dict.values()  # grab curr config
+                dd['gc'] = tuple(gc_list)
+                # clear changed & revert to undo (prev)
+                for item in self.gc_dict.keys():
+                    self.canvas.delete(item)
+                self.gc_dict.clear()
+                for coords in undo_data['gc']:
+                    self.circ_gen(coords)
+            if 'ga' in undo_data.keys():
+                ga_list = self.ga_dict.values()  # grab curr config
+                dd['ga'] = tuple(ga_list)
+                # clear changed & revert to undo (prev)
+                for item in self.ga_dict.keys():
+                    self.canvas.delete(item)
+                self.ga_dict.clear()
+                for coords in undo_data['ga']:
+                    self.arc_gen(coords)
+            if 'dl' in undo_data.keys():
+                dl_list = self.dl_dict.values()  # grab curr config
+                dd['dl'] = tuple(dl_list)
+                # clear changed & revert to undo (prev)
+                for item in self.dl_dict.keys():
+                    self.canvas.delete(item)
+                self.dl_dict.clear()
+                for coords in undo_data['dl']:
+                    self.dim_gen(coords)
+            if 'tx' in undo_data.keys():
+                tx_list = self.tx_dict.values()  # grab curr config
+                dd['tx'] = tuple(tx_list)
+                # clear changed & revert to undo (prev)
+                for item in self.tx_dict.keys():
+                    self.canvas.delete(item)
+                self.tx_dict.clear()
+                for coords in undo_data['tx']:
+                    self.text_gen(coords)
             self.redo_stack.append(dd)  # put curr config on redo stack
         else:
             print("No more Undo steps available.")
@@ -2115,6 +2161,51 @@ class Draw(AppShell.AppShell):
                 self.cc_dict.clear()
                 for coords in redo_data['cc']:
                     self.circ_gen(coords, constr=1)
+            if 'gl' in redo_data.keys():
+                gl_list = self.gl_dict.values()  # grab curr config
+                dd['gl'] = tuple(gl_list)
+                # clear changed & revert to redo
+                for item in self.gl_dict.keys():
+                    self.canvas.delete(item)
+                self.gl_dict.clear()
+                for coords in redo_data['gl']:
+                    self.gline_gen(coords)
+            if 'gc' in redo_data.keys():
+                gc_list = self.gc_dict.values()  # grab curr config
+                dd['gc'] = tuple(gc_list)
+                # clear changed & revert to redo
+                for item in self.gc_dict.keys():
+                    self.canvas.delete(item)
+                self.gl_dict.clear()
+                for coords in redo_data['gc']:
+                    self.circ_gen(coords)
+            if 'ga' in redo_data.keys():
+                ga_list = self.ga_dict.values()  # grab curr config
+                dd['gc'] = tuple(ga_list)
+                # clear changed & revert to redo
+                for item in self.ga_dict.keys():
+                    self.canvas.delete(item)
+                self.ga_dict.clear()
+                for coords in redo_data['ga']:
+                    self.arc_gen(coords)
+            if 'dl' in redo_data.keys():
+                dl_list = self.dl_dict.values()  # grab curr config
+                dd['dl'] = tuple(dl_list)
+                # clear changed & revert to redo
+                for item in self.dl_dict.keys():
+                    self.canvas.delete(item)
+                self.dl_dict.clear()
+                for coords in redo_data['dl']:
+                    self.dim_gen(coords)
+            if 'tx' in redo_data.keys():
+                tx_list = self.tx_dict.values()  # grab curr config
+                dd['tx'] = tuple(tx_list)
+                # clear changed & revert to redo
+                for item in self.tx_dict.keys():
+                    self.canvas.delete(item)
+                self.tx_dict.clear()
+                for coords in redo_data['tx']:
+                    self.text_gen(coords)
             self.undo_stack.append(dd)  # put curr config on undo stack
         else:
             print("No more Redo steps available.")
@@ -2128,43 +2219,46 @@ class Draw(AppShell.AppShell):
         'cc'    construction circle
         'gl'    geometry line
         'gc'    geometry circle
+        'ga'    geometry arc
         'dl'    linear dimension
         'tx'    text
         At various points in time, as the drawing configuration changes,
         each of these dictionaries will change. In order to be able to
         undo and redo the most recent change, it is neccesary to keep
-        track of the difference between the current configuration (curr)
+        track of the difference between the current (curr) configuration
         and the configuration just previous (prev). The curr configuration
         is stored in files named like: 'self.cc_dict' in which the key is
         the ID number assigned by the Tk canvas and the value is a tuple
         containing the coordinates of the drawing element. The prev
         configuration is stored in files named like: self.cc_tupl_prev
-        containing a tuple of tuples contining the coordinates of all the
-        drawing elements of that type. Typically, the only difference
-        between (curr) and (prev) might be just one or two types of drawing
+        containing the coordinates of all the drawing elements of that
+        type (in tuple format). Typically, the only difference between
+        (curr) and (prev) might be just one or two types of drawing
         element.
         
         For example, if the previous CAD op was to add a slot, only 'gl'
-        and 'gc' will change. In this case, a mod_dict with just two
-        key:value pairs is then put onto self.undo_stack.
+        and 'ga' will change. In this case, a mod_dict with just two
+        key:value pairs is then put onto self.undo_stack. The values are
+        a tuple of coords for all the drawing elements of the specified
+        type ('gl' or 'ga') in the drawing at the previous config.        
         
-        mod_dict = {'gl': (prev config), 'gc: (prev config)}
+        mod_dict = {'gl': (prev config), 'ga: (prev config)}
         
-        If there have been no changes for a drawing element type, that key
-        and value will not be present. For example, if there is no 'tx' key
-        in the dict, then it can be inferred that there have been no text
-        changes in the drawing between prev and curr.
+        If there have been no changes for a particular drawing element
+        type, that key and value will not be present. For example, if
+        there is no 'tx' key in the dict, then it can be inferred that
+        there have been no text changes in the drawing between prev and
+        curr.
 
-        In this method, the mod_dict (dd) is appended onto the undo stack
-        and the corresponding values for self.data_prev are updated with
-        the current data.
+        This method puts the mod_dict (dd) onto the undo stack and then
+        updates self.data_prev with the current data.
         As an aside, tuples (rather than lists) are used to store the prev
         config in order to guard against the problem where occasionally
         we get burned when two variable names are intended to be different
         but are actually pointing to the same list. Ouch!
         """
         
-        # Look for changes between prev and curr
+        # Find changes between prev and curr
         dd = {}  # prev values of drawing element types that changed
         if tuple(self.cl_list) != self.cl_tupl_prev:
             dd['cl'] = self.cl_tupl_prev
@@ -2173,26 +2267,28 @@ class Draw(AppShell.AppShell):
         if tuple(cc_list) != self.cc_tupl_prev:
             dd['cc'] = self.cc_tupl_prev
             self.cc_tupl_prev = tuple(cc_list)  # update prev to curr
+        gl_list = self.gl_dict.values()  # grab curr config
+        if tuple(gl_list) != self.gl_tupl_prev:
+            dd['gl'] = self.gl_tupl_prev
+            self.gl_tupl_prev = tuple(gl_list)  # update prev to curr
+        gc_list = self.gc_dict.values()  # grab curr config
+        if tuple(gc_list) != self.gc_tupl_prev:
+            dd['gc'] = self.gc_tupl_prev
+            self.gc_tupl_prev = tuple(gc_list)  # update prev to curr
+        ga_list = self.ga_dict.values()  # grab curr config
+        if tuple(ga_list) != self.ga_tupl_prev:
+            dd['ga'] = self.ga_tupl_prev
+            self.ga_tupl_prev = tuple(ga_list)  # update prev to curr
+        dl_list = self.dl_dict.values()  # grab curr config
+        if tuple(dl_list) != self.dl_tupl_prev:
+            dd['dl'] = self.dl_tupl_prev
+            self.dl_tupl_prev = tuple(dl_list)  # update prev to curr
+        tx_list = self.tx_dict.values()  # grab curr config
+        if tuple(tx_list) != self.tx_tupl_prev:
+            dd['tx'] = self.tx_tupl_prev
+            self.tx_tupl_prev = tuple(tx_list)  # update prev to curr
         if dd:
             self.undo_stack.append(dd)  # append prev config to undo stack
-        
-        '''
-        if self.gl_dict != self.gl_dict_prev:
-            delta['gl'] = self.gl_dict_prev
-            self.gl_dict_prev = self.gl_dict
-        if self.gc_dict != self.gc_dict_prev:
-            delta['gc'] = self.gc_dict_prev
-            self.gc_dict_prev = self.gc_dict
-        if self.ga_dict != self.ga_dict_prev:
-            delta['ga'] = self.ga_dict_prev
-            self.ga_dict_prev = self.ga_dict
-        if self.dl_dict != self.dl_dict_prev:
-            delta['dl'] = self.dl_dict_prev
-            self.dl_dict_prev = self.dl_dict
-        if self.tx_dict != self.tx_dict_prev:
-            delta['tx'] = self.tx_dict_prev
-            self.tx_dict_prev = self.tx_dict
-        '''
         
 
     #=======================================================================
