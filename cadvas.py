@@ -1707,8 +1707,8 @@ class Draw(AppShell.AppShell):
         elif self.obj_stack and len(self.pt_stack) == 2:
             if self.float_stack:
                 repeat = int(self.float_stack.pop())
-        else:
-            repeat = 0
+            else:
+                repeat = 0
             p1 = self.pt_stack.pop()
             p0 = self.pt_stack.pop()
             items = self.obj_stack.pop()
@@ -1718,17 +1718,17 @@ class Draw(AppShell.AppShell):
                 for item in items:
                     if item in self.gl_dict.keys():
                         e = self.gl_dict[item]
-                        for x in xrange(repeat):
+                        for x in range(repeat):
                             e = (add_pt(e[0], dp), add_pt(e[1], dp))
                             self.gline_gen(e)
                     elif item in self.gc_dict.keys():
                         e = self.gc_dict[item]
-                        for x in xrange(repeat):
+                        for x in range(repeat):
                             e = (add_pt(e[0], dp), e[1])
                             self.circ_gen(e)
                     elif item in self.ga_dict.keys():
                         e = self.ga_dict[item]
-                        for x in xrange(repeat):
+                        for x in range(repeat):
                             e = (add_pt(e[0], dp), e[1], e[2], e[3])
                             self.arc_gen(e)
                     else:
@@ -1777,17 +1777,17 @@ class Draw(AppShell.AppShell):
                 for item in items:
                     if item in self.gl_dict.keys():
                         e = self.gl_dict[item]
-                        for i in xrange(self.repeat):
+                        for i in range(self.repeat):
                             e = (rotate_pt(e[0], A, ctr), rotate_pt(e[1], A, ctr))
                             self.gline_gen(e)
                     elif item in self.gc_dict.keys():
                         e = self.gc_dict[item]
-                        for x in xrange(self.repeat):
+                        for x in range(self.repeat):
                             e = (rotate_pt(e[0], A, ctr), e[1])
                             self.circ_gen(e)
                     elif item in self.ga_dict.keys():
                         e = self.ga_dict[item]
-                        for x in xrange(self.repeat):
+                        for x in range(self.repeat):
                             e = (rotate_pt(e[0], A, ctr), e[1], e[2]+A, e[3]+A)
                             self.arc_gen(e)
                     else:
