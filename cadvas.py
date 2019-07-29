@@ -750,11 +750,9 @@ class Draw(AppShell.AppShell):
                                  label='Exit', command=self.quit)
         self.menuBar.addmenu('Edit', 'Undo / Redo')
         self.menuBar.addmenuitem('Edit', 'command', 'Undo',
-                                 label='Undo',
-                                 command=self.undo)
+                                 label='Undo', command=self.undo)
         self.menuBar.addmenuitem('Edit', 'command', 'Redo',
-                                 label='Redo',
-                                 command=self.redo)
+                                 label='Redo', command=self.redo)
         self.menuBar.addmenu('View', 'View commands')
         self.menuBar.addmenuitem('View', 'command', 'Fit geometry to screen',
                                  label='Fit', command=self.view_fit)
@@ -2307,7 +2305,6 @@ class Draw(AppShell.AppShell):
             self.canvas.delete(self.catch_pnt)
             self.catch_pnt = None
         if self.op:
-            self.save_delta()
             self.op = ''
         self.sel_box_crnr = None
         self.canvas.delete(self.sel_boxID)
@@ -2320,6 +2317,7 @@ class Draw(AppShell.AppShell):
         self.set_sel_mode('')
         self.allow_list = 0
         self.quitpopup()
+        self.save_delta()
         self.updateMessageBar('CTRL-LMB to pan.  CTRL-RMB to zoom.')
 
     def enterfloat(self, str_value):
