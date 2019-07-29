@@ -2287,6 +2287,7 @@ class Draw(AppShell.AppShell):
             self.tx_tupl_prev = tuple(tx_list)  # update prev to curr
         if dd:
             self.undo_stack.append(dd)  # append prev config to undo stack
+            self.redo_stack.clear()  # clear after drawing modifications
         
 
     #=======================================================================
