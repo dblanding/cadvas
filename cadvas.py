@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 #
 # CADvas 
-# A 2D CAD application written in Python and based on the Tkinter canvas.
+# A 2D CAD application written in Python3 and using the Tkinter canvas.
 # The latest  version of this file can be found at:
-# http://members.localnet.com/~blanding/cadvas
+# https://github.com/dblanding/cadvas
 #
 # Author: Doug Blanding   <dblanding at gmail dot com>
 #
