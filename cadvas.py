@@ -753,6 +753,8 @@ class Draw(AppShell.AppShell):
                                  label='Undo', command=self.undo)
         self.menuBar.addmenuitem('Edit', 'command', 'Redo',
                                  label='Redo', command=self.redo)
+        self.menuBar.addmenuitem('Edit', 'command', 'Clear Redo',
+                                 label='Clr Redo', command=self.clear_redo)
         self.menuBar.addmenu('View', 'View commands')
         self.menuBar.addmenuitem('View', 'command', 'Fit geometry to screen',
                                  label='Fit', command=self.view_fit)
@@ -2287,8 +2289,9 @@ class Draw(AppShell.AppShell):
             self.tx_tupl_prev = tuple(tx_list)  # update prev to curr
         if dd:
             self.undo_stack.append(dd)  # append prev config to undo stack
-            self.redo_stack.clear()  # clear after drawing modifications
-        
+            
+    def clear_redo(self):  # clear redo stack
+        self.redo_stack.clear()
 
     #=======================================================================
     # Event handling
