@@ -2112,7 +2112,7 @@ class Draw(AppShell.AppShell):
 
     Whenever the drawing changes as a result of an operation which creates,
     modifies or deletes drawing elements (cmd op), the save_delta method
-    runs, generating a deltadict (dd)and putting it onto the undo stack.
+    runs, generating a deltadict (dd) and putting it onto the undo stack.
     deltadict contains the prev config values of only the drawing element
     types that changed between prev and curr. 
                              __________
