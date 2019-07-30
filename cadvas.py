@@ -2072,8 +2072,95 @@ class Draw(AppShell.AppShell):
     # Undo / Redo
     #=======================================================================
 
+    """
+    Drawing elements are stored in dicts, grouped by 'type',
+    with the following keys:
+    'cl'    construction line
+    'cc'    construction circle
+    'gl'    geometry line
+    'gc'    geometry circle
+    'ga'    geometry arc
+    'dl'    linear dimension
+    'tx'    text
+    At various points in time, as the drawing configuration changes,
+    each of these dictionaries will change. In order to be able to
+    undo and redo the most recent change, it is neccesary to keep
+    track of the difference between the current configuration (curr)
+    and the configuration just previous (prev). The curr configuration
+    is stored in vars named like: 'self.cc_dict' in which the key is
+    the ID number assigned by the Tk canvas and the value is a tuple
+    containing the coordinates of the drawing element. The prev
+    configuration is stored in vars named like: self.cc_tupl_prev
+    containing the coordinates of all the drawing elements of that
+    type (in tuple format). Typically, the only difference between
+    (curr) and (prev) might be just one or two types of drawing
+    element.
+    
+    For example, if the previous CAD op added a slot, only 'gl'
+    and 'ga' will change. In this case, a deltadict with just two
+    key:value pairs is then put onto self.undo_stack. The values are
+    a tuple of coords for all the drawing elements of the specified
+    type ('gl' or 'ga') in the drawing at the previous config.        
+    
+    deltadict = {'gl': (prev config), 'ga: (prev config)}
+    
+    If there have been no changes for a particular drawing element
+    type, that key and value will not be present in deltadict.
+    For example, if there is no 'tx' key in the dict, then it can be
+    inferred that there have been no text changes in the drawing
+    between prev and curr.
+
+    Whenever the drawing changes as a result of an operation which creates,
+    modifies or deletes drawing elements (cmd op), the save_delta method
+    runs, generating a deltadict (dd)and putting it onto the undo stack.
+    deltadict contains the prev config values of only the drawing element
+    types that changed between prev and curr. 
+                             __________
+                            |  CMD OP  |
+                            |__________|
+                                 ||
+                                 ||
+                                 \/
+     ____________            __________     dd     ______________
+    | redo stack |          |   Curr   |    -->   |  Undo stack  |
+    |____________|          |__________|          |______________|
+                                 ||
+                                 ||
+                                 \/
+                             __________
+                            |   Prev   |
+                            |__________|
+
+
+    The undo & redo buttons work as shown in the diagram below.
+
+     ____________            __________            ______________
+    | redo stack |   <--    |   Curr   |   <--    |  Undo stack  |
+    |____________|    -->   |__________|    -->   |______________|
+
+
+                             __________
+                            |   Prev   |
+                            |__________|
+
+    For example, when the Undo button is clicked:
+    1. The last value in the Undo stack is popped off and used to revise
+        the curr drawdict (display).
+    2. deltadict of curr w/r/t undo goes on the Redo stack.
+    3. Prev is unchanged.
+
+    Similarly, if the Redo button is clicked:
+    1. The last value in the Redo stack is popped off and used to revise
+        the curr drawdict (display).
+    2. deltadict of curr w/r/t Redo goes on the Undo stack.
+    3. Prev is unchanged.
+    """
+
     def undo(self):
-        """Pop prev off undo, Put curr on redo, regen prev config"""
+        """Pop undo_data off undo_stack. For drawing_element_types
+        in undo_data, substitute the undo_data for the current drawing
+        data and build a new dict comprising the displaced values from
+        the current drawing. Put new dict on the redo_stack."""
         
         if self.undo_stack:
             undo_data = self.undo_stack.pop()
@@ -2142,7 +2229,10 @@ class Draw(AppShell.AppShell):
             print("No more Undo steps available.")
 
     def redo(self):
-        """Pop data off redo, put curr on undo, regen new config"""
+        """Pop redo_data off redo_stack. For drawing_element_types
+        in redo_data, substitute the redo_data for the current drawing
+        data and build a new dict comprising the displaced values from
+        the current drawing. Put new dict on the undo_stack."""
 
         if self.redo_stack:
             redo_data = self.redo_stack.pop()
@@ -2211,47 +2301,10 @@ class Draw(AppShell.AppShell):
             print("No more Redo steps available.")
 
     def save_delta(self):
-        """After an op, put previous drawing config on undo stack.
+        """After a drawing change, put changes from prev on undo stack.
 
-        All the drawing elements are stored in dicts, grouped by 'type',
-        with the following keys:
-        'cl'    construction line
-        'cc'    construction circle
-        'gl'    geometry line
-        'gc'    geometry circle
-        'ga'    geometry arc
-        'dl'    linear dimension
-        'tx'    text
-        At various points in time, as the drawing configuration changes,
-        each of these dictionaries will change. In order to be able to
-        undo and redo the most recent change, it is neccesary to keep
-        track of the difference between the current (curr) configuration
-        and the configuration just previous (prev). The curr configuration
-        is stored in files named like: 'self.cc_dict' in which the key is
-        the ID number assigned by the Tk canvas and the value is a tuple
-        containing the coordinates of the drawing element. The prev
-        configuration is stored in files named like: self.cc_tupl_prev
-        containing the coordinates of all the drawing elements of that
-        type (in tuple format). Typically, the only difference between
-        (curr) and (prev) might be just one or two types of drawing
-        element.
-        
-        For example, if the previous CAD op was to add a slot, only 'gl'
-        and 'ga' will change. In this case, a mod_dict with just two
-        key:value pairs is then put onto self.undo_stack. The values are
-        a tuple of coords for all the drawing elements of the specified
-        type ('gl' or 'ga') in the drawing at the previous config.        
-        
-        mod_dict = {'gl': (prev config), 'ga: (prev config)}
-        
-        If there have been no changes for a particular drawing element
-        type, that key and value will not be present. For example, if
-        there is no 'tx' key in the dict, then it can be inferred that
-        there have been no text changes in the drawing between prev and
-        curr.
-
-        This method puts the mod_dict (dd) onto the undo stack and then
-        updates self.data_prev with the current data.
+        This method generates a deltadict (dd) and puts it onto the undo
+        stack, then updates self.data_prev with the current data.
         As an aside, tuples (rather than lists) are used to store the prev
         config in order to guard against the problem where occasionally
         we get burned when two variable names are intended to be different
