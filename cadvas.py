@@ -2073,8 +2073,9 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     """
-    Drawing elements are stored in dicts, grouped by 'type',
-    with the following keys:
+    Drawing elements are stored in dictionaries, grouped by 'type', with
+    types represented by the following keys:
+    
     'cl'    construction line
     'cc'    construction circle
     'gl'    geometry line
@@ -2082,61 +2083,52 @@ class Draw(AppShell.AppShell):
     'ga'    geometry arc
     'dl'    linear dimension
     'tx'    text
-    At various points in time, as the drawing configuration changes,
-    each of these dictionaries will change. In order to be able to
-    undo and redo the most recent change, it is neccesary to keep
-    track of the difference between the current configuration (curr)
-    and the configuration just previous (prev). The curr configuration
+    
+    As the drawing configuration changes, these dictionaries will change.
+    In order to be able to undo and redo changes, it is neccesary to
+    keep track of both the the current configuration (curr) and the
+    configuration just previous (prev). The curr configuration
     is stored in vars named like: 'self.cc_dict' in which the key is
-    the ID number assigned by the Tk canvas and the value is a tuple
+    the ID number assigned by the Tk canvas and the value is a list
     containing the coordinates of the drawing element. The prev
     configuration is stored in vars named like: self.cc_tupl_prev
     containing the coordinates of all the drawing elements of that
     type (in tuple format). Typically, the only difference between
     (curr) and (prev) might be just one or two types of drawing
-    element.
-    
-    For example, if the previous CAD op added a slot, only 'gl'
-    and 'ga' will change. In this case, a deltadict with just two
-    key:value pairs is then put onto self.undo_stack. The values are
-    a tuple of coords for all the drawing elements of the specified
-    type ('gl' or 'ga') in the drawing at the previous config.        
-    
-    deltadict = {'gl': (prev config), 'ga: (prev config)}
-    
-    If there have been no changes for a particular drawing element
-    type, that key and value will not be present in deltadict.
-    For example, if there is no 'tx' key in the dict, then it can be
-    inferred that there have been no text changes in the drawing
-    between prev and curr.
+    element. For example, if the most recent CAD operation added a slot,
+    then only the dicts with keys 'gl' and 'ga' will change. 
 
-    Whenever the drawing changes as a result of an operation which creates,
-    modifies or deletes drawing elements (cmd op), the save_delta method
-    runs, generating a deltadict (dd) and putting it onto the undo stack.
-    deltadict contains the prev config values of only the drawing element
-    types that changed between prev and curr. 
+    Any time the drawing changes (as a result of an operation that creates,
+    modifies or deletes drawing elements), the save_delta() method will be
+    called. This method first appends a dictionary corresponding with the
+    prev config onto the undo_stack. It then updates the prev config to
+    the curr config.
                              __________
-                            |  CMD OP  |
+                            | C/M/D op |
                             |__________|
                                  ||
-                                 ||
-                                 \/
+                                 ||1
+                                 \/          2
      ____________            __________     dd     ______________
     | redo stack |          |   Curr   |    -->   |  Undo stack  |
     |____________|          |__________|          |______________|
                                  ||
-                                 ||
+                                 ||3
                                  \/
                              __________
                             |   Prev   |
                             |__________|
 
-
+    1. Drawing elements are Created / Modified / Deleted.
+    2. drawingdict of curr config append onto undo_stack.
+    3. prev config overwritten by curr config.
+    
+    
     The undo & redo buttons work as shown in the diagram below.
 
-     ____________            __________            ______________
-    | redo stack |   <--    |   Curr   |   <--    |  Undo stack  |
-    |____________|    -->   |__________|    -->   |______________|
+     ____________     2      __________ 3       1  ______________
+    | redo stack |   <--    |   Curr   |    <--   |  Undo stack  |
+    |____________|          |__________|          |______________|
 
 
                              __________
@@ -2144,16 +2136,32 @@ class Draw(AppShell.AppShell):
                             |__________|
 
     For example, when the Undo button is clicked:
-    1. The last value in the Undo stack is popped off and used to revise
-        the curr drawdict (display).
-    2. deltadict of curr w/r/t undo goes on the Redo stack.
-    3. Prev is unchanged.
+    1. undo_data is popped off the undo_stack.
+    2. curr config goes onto the redo_stack.
+    3. curr is updated with undo_data.
+
+
+     ____________ 1       3  __________      2     ______________
+    | redo stack |   -->    |   Curr   |    -->   |  Undo stack  |
+    |____________|          |__________|          |______________|
+
+
+                             __________
+                            |   Prev   |
+                            |__________|
 
     Similarly, if the Redo button is clicked:
-    1. The last value in the Redo stack is popped off and used to revise
-        the curr drawdict (display).
-    2. deltadict of curr w/r/t Redo goes on the Undo stack.
-    3. Prev is unchanged.
+    1. redo_data is popped off the redo_stack.
+    2. curr config goes onto the undo_stack.
+    3. curr is updated with redo_data.
+
+    Typically, after clicking undo / redo buttons one or more times,
+    the user will resume running C/M/D operations. Once this happens,
+    the data on the redo stack will no longer be relevant and needs
+    to be discarded. For now, there is a button under the edit menu
+    that allows the user to manually clear the redo stack.
+
+    ToDo: Figure out how best to clear the redo_stack automatically.
     """
 
     def undo(self):
@@ -2219,7 +2227,7 @@ class Draw(AppShell.AppShell):
     def put_curr(self, dd):
         """Regenerate current config based on dd."""
 
-        self.cl_list = dd['cl']
+        self.cl_list = list(dd['cl'])  # This can't be a tuple. Must be list.
         self.regen_all_cl()
 
         for item in self.cc_dict.keys():
