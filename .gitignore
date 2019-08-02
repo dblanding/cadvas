@@ -2,3 +2,5 @@ __pycache__/
 savedCadFiles/
 *.pyc
 *.pkl
+build/
+setup.py
