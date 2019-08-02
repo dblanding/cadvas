@@ -1,2 +1,3 @@
 # cadvas
 2D CAD using Python
+More info to come...
