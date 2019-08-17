@@ -3,9 +3,9 @@
 # CADvas 
 # A 2D CAD application written in Python and based on the Tkinter canvas.
 # The latest  version of this file can be found at:
-# http://members.localnet.com/~blanding/cadvas
+# http://github.com/dblanding/cadvas
 #
-# Author: Doug Blanding   <doug dot blanding at localnet dot com>
+# Author: Doug Blanding   <dblanding at gmail dot com>
 #
 # CADvas is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
