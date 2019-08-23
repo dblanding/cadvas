@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta name="generator" content="Bluefish">
+<title>gCADvas: CAD experiment on Gnome canvas</title>
+</head>
+<body>
+<h1>gCADvas: CAD experiment on Gnome canvas</h1>
+<h4>1/18/04</h4>
+
+<p>
+One of the benefits of having an only *moderately* functional 2D CAD app
+written in a very *compact* manner with a powerful, easy to learn language
+like Python is that it should serve as a useful starting point for others
+wanting to modify, extend or improve the code.
+This is my excuse for keeping the code to its bare essentials, only
+reluctantly adding features unless I can figure out how to do so with a
+minimum of new code.</p>
+<p>So here it is. A small python file called
+<a href="gcadvas.py">gcadvas.py</a>
+which provides some basic CAD functionality and gives an opportunity to
+evaluate the suitability of this approach.</p>
+<p>So far, I am quite pleased with the amount of functionality I am
+able to achieve with a small amount of python code. However, some
+compromises have been made. For example, using the gnome canvas, I am
+constrained to select at most one canvas item at a time. It is not
+possible to select two lines simultaneously and then calculate their
+intersection. As a result, I found it necesary to generate selectable
+"intersection points" anywhere that I want to be able to select an
+intersection point. To keep from having a ridiculous number of these
+points, I decided to create them only for intersections of "construction
+type" lines. I have defined two distinct types of lines, each with its own
+"rules" governing behavior for screen picks. The distinctions to be
+made between these two basic types of lines are as follows:
+<h3>Construction Lines</h3>
+<ul>
+<li>Construction lines are "infinite" in length and are intended to be
+used temporarily to assist in the creation of "real" geometry.</li>
+<li>Construction lines have "clickable" intersection points.</li>
+<li>Clicking on a construction line does not select a point, but
+rather selects the line itself. This is needed for some operations such
+as creation of parallel and perpendicular lines.</li>
+</ul>
+<h3>Geometry Lines</h3>
+<ul>
+<li>Geometry lines are finite length "segments".</li>
+<li>Clicking on a geometry line or arc selects the end point closest to
+the point clicked.</li>
+<li>CTRL-SHIFT click on a geometry line selects the midpoint.</li>
+<li>CTRL-SHIFT click on a circle or arc selects the center.</li>
+</ul>
+<h3>Other mouse button shortcuts</h3>
+<ul>
+<li>CTRL-LMB on the canvas pans the view.</li>
+<li>MMB on the canvas ends the current operation.</li>
+<li>RMB on the canvas pops up a zoom menu.</li>
+</ul>
+<h3>Units</h3>
+Although the application always "thinks and works in mm", the user can
+easily switch to other units on the fly. When the units are switched to
+inches, for example, everything in the UI switches to inches, including
+the displayed dimensions, the mouse cursor position display, and values
+typed in by the user. Adding new units choices is very easy.
+<h3>Printing</h3>
+<p>No frills. The geometry (and dimensions) are scaled to fit a letter
+size format and sent in postscript format to the printer or to file.</p>
+<h3>Screenshot</h3>
+<img src="snapshot1.png" width="808" height="678" border="0" alt="">
+<h3>Line Creation Issues</h3>
+<p>One little problem I encountered using the canvas occurs during the
+creation of lines. The problem occurs when the mouse is used to pick an
+item on the canvas and the new line lands on top of the mouse cursor. If
+the stacking order is such that the new line is placed "under" the item
+being clicked, there is no problem. However, if the stacking order is such
+that the new line is placed "on top of" the item being clicked, a series of
+"leave_notify" / "enter_notify" events occurs, involving both the clicked
+item and the newly created line, and the canvas ends up freezing. I'm not
+sure if this is a bug in the canvas or if there is some reason it needs
+to work this way, but it presents a problem in this application. To get
+around this problem, whenever the user clicks a canvas item while creating
+geometry, I have to make sure the new geometry is placed in a group which
+is "below" the item being clicked. For this reason, intersection points
+belong to a group which is above the geometry group. But what
+if other geometry is clicked during the creation of new geometry? The new
+geometry would be placed on top of the clicked item and cause the canvas
+to freeze. As a solution to this problem, all new geometry is added to a
+temporary group, placed just below the geometry group. Then, after the
+mouse cursor leaves the clicked item(s), the new geometry is reparented
+into the geometry group. The call to reparent the new geometry items is
+made from the motion_notify event over the blank canvas.</p>
+<h3>Zoom issues</h3>
+<p>By clicking the RMB over the empty canvas, a zoom menu is popped up,
+presenting various windowing and zooming options. When zooming in or out,
+the canvas.set_pixels_per_unit(scale) method is called, and if the value
+of scale is significantly higher than about 15 or so, vast amounts of
+memory are consumed, sometimes resulting in a segfault. I have therefore
+limited the maximum zoom-in scale to 15 to avoid this problem. I haven't
+figured out how to fix this problem yet.</p>
+<h4>In Summary</h4>
+<p>I would say the experiment has been only a moderate success, at best.
+It is true that using python and the Gnome canvas, I have been able to
+achieve a moderate level of CAD functionality with a relatively small amount
+of code. But problems such as the zooming-in problem remain. Also, I noticed
+some other zoom related problems: When zoomed way out, panning gets jumpy and
+the dimension arrows get distorted, too. And after repeated "zoom to fit",
+the app crashes. So I'm putting it on the shelf, for now. </p>
+<p>Doug Blanding</p>
+<p>doug dot blanding at kodak dot com</p>
+</body>
+</html>

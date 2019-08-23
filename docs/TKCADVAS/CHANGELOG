@@ -1,0 +1,73 @@
+2005-1-12	0.2.1
+	Fixed dxf ARC entities so they load in OK now. Also added check
+	for metric / english units and (hopefully) apply the right scale
+	to imported drawings.
+
+2005-1-12	0.2
+	dxf save and load are now functional, in a limited way.
+	Only LINE, CIRCLE, and ARC entities are supported, and this
+	functionality has been checked out against only one commercial
+	CAD vendor (CoCreate). Loading dxf ARC entities is not working
+	correctly yet. (They come in as circles.)
+
+2005-1-9	0.1.7
+	Added a bunch of math function buttons to calculator. Adjusted
+	the padx value of some of the buttons improving its appearance.
+	Also, fixed the recall function to rotate the stack up rather
+	than wipe out the value in the x-register.
+	
+	Fixed the problem in "box select" mode, where the selection box
+	would not go away when the command was terminated by MMB.
+	
+	Added a nifty little coordinate display showing the (x, y)
+	coordinate values of a line's end point relative to its starting
+	point during the "rubber line" mode.
+	
+	Added file dxf.py, which hopes to be able to someday support dxf
+	load/save. So far, it is a standalone dxf to cadvas translator
+	and it only supports the LINE entity.
+	
+2005-1-6	0.1.6
+	I'm bored so I decided to work on this again. I haven't looked at it in
+	almost a year, and it took me a while to remember how it works, so the
+	first thing I did (after reaquanting myself) is expand on the
+	documentation. Then I made a few small fixes:
+	
+	I added the abilitiy to select lists of items for certain operations,
+	such as delete_element and translate. When an operation enables this
+	mode, 2 extra buttons show up in the RMB popup menu: "Start list" and
+	"End list".
+	
+	Fixed file_Saveas to update self.filename to the new "saved as" name.
+	
+	Units are now saved and loaded with a drawing, so it's no longer
+	neccesary to change the units from mm to feet every time a floorplan
+	is loaded.
+	
+	Measure commands would produce an error if the calculator were not
+	running. Now, the calculator just starts automatically if a measure
+	command needs to write to it.
+
+2004-2-18	0.1.5
+	Misc minor fixes
+
+2004-2-14	0.1.4
+	Added popup view menu activated by right click on canvas.
+
+2004-2-14	0.1.3
+	Changed calculator to use grid method instead of pack.
+
+2004-2-13	0.1.2
+	Added some fixes to calculator.
+
+2004-2-13	0.1.1
+	Added RPN calculator with capability for 2-way communication
+	of float values to CADvas.
+
+2004-2-9	0.1
+	posted CADvas on website.
+	Functionality includes numerous construction line and geometry creation
+	methods, a few geometry modification methods (split, join, fillet, and
+	move), save, load, (ps)print, zoom & pan, view fit, units, measure,
+	linear dimensioning (horiz, vert, parallel), text create & move, and
+	several delete methods.
