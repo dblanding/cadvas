@@ -790,6 +790,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Dimension', 'command', 'Parallel dimension',
                                  label='Dim Parallel',
                                  command=lambda k='dim_par':self.dispatch(k))
+        self.menuBar.addmenuitem('Dimension', 'command', 'Regenerate all dims',
+                                 label='Regen Dims',
+                                 command=lambda k='regen_all_dims':self.dispatch(k))
         self.menuBar.addmenu('Text', 'Text')
         self.menuBar.addmenuitem('Text', 'command', 'Enter text',
                                  label='Create text',
@@ -1905,10 +1908,11 @@ class Draw(AppShell.AppShell):
         """Delete all existing dimensions, clear dl_dict, and regenerate.
         This needs to be done after zoom because the dimension text does
         not change size with zoom."""
-        dimlist = self.dl_dict.values()
+        dimlist = list(self.dl_dict.values())
         self.del_all_d()
         for coords in dimlist:
             self.dim_gen(coords)
+        self.end()
 
     def dim_h(self, p=None):
         """Create a horizontal dimension"""
