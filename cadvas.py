@@ -477,6 +477,7 @@ class Draw(AppShell.AppShell):
     dimcolor = 'red'        # color of dimensions
     textcolor = 'cyan'      # text color
     rubbercolor = 'yellow'  # color of (temporary) rubber elements
+    shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
                  'inches': 25.4,
                  'feet': 304.8}
@@ -952,8 +953,10 @@ class Draw(AppShell.AppShell):
 
     def hcl(self, pnt=None):
         """Create horizontal construction line from one point or y value."""
-        self.updateMessageBar(
-            'Pick pt or enter value for horizontal constr line')
+
+        message = 'Pick pt or enter value for horizontal constr line'
+        message += self.shift_key_advice
+        self.updateMessageBar(message)
         proceed = 0
         if self.pt_stack:
             p = self.pt_stack.pop()
@@ -972,8 +975,10 @@ class Draw(AppShell.AppShell):
 
     def vcl(self, pnt=None):
         """Create vertical construction line from one point or x value."""
-        self.updateMessageBar(
-            'Pick pt or enter value for vertical constr line')
+
+        message = 'Pick pt or enter value for vertical constr line'
+        message += self.shift_key_advice
+        self.updateMessageBar(message)
         proceed = 0
         if self.pt_stack:
             p = self.pt_stack.pop()
@@ -993,8 +998,10 @@ class Draw(AppShell.AppShell):
     def hvcl(self, pnt=None):
         """Create a horiz & vert construction line pair at a point.
         Skip rubber lines since this needs two and there is currently only one."""
-        self.updateMessageBar(
-            'Pick pt or enter coords for vertical & horizontal constr lines')
+
+        message = 'Pick pt or enter coords for vertical & horizontal constr lines'
+        message += self.shift_key_advice
+        self.updateMessageBar(message)
         if self.pt_stack:
             p = self.pt_stack.pop()
             self.cline_gen(angled_cline(p, 0))
@@ -1002,9 +1009,11 @@ class Draw(AppShell.AppShell):
 
     def acl(self, pnt=None):
         """Create construction line thru a pt, at a specified angle."""
+        
         if not self.pt_stack:
-            self.updateMessageBar(
-                'Pick pnt for angled construction line or enter coordinates.')
+            message = 'Pick pnt for angled construction line or enter coordinates'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif self.pt_stack and self.float_stack:
             p0 = self.pt_stack[0]
             ang = self.float_stack.pop()
@@ -1016,8 +1025,9 @@ class Draw(AppShell.AppShell):
             cline = cnvrt_2pts_to_coef(p0, p1)
             self.cline_gen(cline)
         elif self.pt_stack and not self.float_stack:
-            self.updateMessageBar(
-                'Specify 2nd point or enter angle (degrees).')
+            message = 'Specify 2nd point or enter angle in degrees'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
             if pnt:
                 p0 = self.pt_stack[0]
                 p1 = self.cp2ep(pnt)
@@ -1027,14 +1037,21 @@ class Draw(AppShell.AppShell):
 
     def clrefang(self, p3=None):
         """Create a construction line at an angle relative to a reference."""
+        
         if not self.pt_stack:
-            self.updateMessageBar('Specify point for new construction line.')
+            messsage = 'Specify point for new construction line'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif not self.float_stack:
-            self.updateMessageBar('Enter offset angle in degrees.')
+            self.updateMessageBar('Enter offset angle in degrees')
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Pick first point on reference line.')
+            message = 'Pick first point on reference line'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif len(self.pt_stack) == 2:
-            self.updateMessageBar('Pick second point on reference line.')
+            message = 'Pick second point on reference line'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif len(self.pt_stack) == 3:
             p3 = self.pt_stack.pop()
             p2 = self.pt_stack.pop()
@@ -1047,14 +1064,19 @@ class Draw(AppShell.AppShell):
 
     def abcl(self, pnt=None):
         """Create an angular bisector construction line."""
+        
         if not self.float_stack and not self.pt_stack:
-            self.updateMessageBar('Enter bisector factor (Default=.5) or specify vertex.')
+            message = 'Enter bisector factor (Default=.5) or specify vertex'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif not self.pt_stack:
-            self.updateMessageBar('Specify vertex point.')
+            message = 'Specify vertex point'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Specify point on base line.')
+            self.updateMessageBar('Specify point on base line')
         elif len(self.pt_stack) == 2:
-            self.updateMessageBar('Specify second point.')
+            self.updateMessageBar('Specify second point')
             if pnt:
                 f = .5
                 if self.float_stack:
@@ -1076,12 +1098,19 @@ class Draw(AppShell.AppShell):
 
     def lbcl(self, pnt=None):
         """Create a linear bisector construction line."""
+        
         if not self.pt_stack and not self.float_stack:
-            self.updateMessageBar('Enter bisector factor (Default=.5) or specify first pt.')
+            message = 'Enter bisector factor (Default=.5) or specify first point'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif not self.pt_stack:
-            self.updateMessageBar('Specify first point.')
+            message = 'Specify first point'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Specify second point.')
+            message = 'Specify second point'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
             if pnt:
                 f = .5
                 if self.float_stack:
@@ -1105,20 +1134,22 @@ class Draw(AppShell.AppShell):
 
     def parcl(self, pnt=None):
         """Create parallel clines in one of two modes:
+
         1) At a specified offset distance from selected straight element, or
         2) Parallel to a selected straight element through a selected point."""
+        
         if not self.obj_stack and not self.float_stack:
             self.updateMessageBar(
-                'Pick a straight element or enter an offset distance.')
+                'Pick a straight element or enter an offset distance')
             self.set_sel_mode('items')
         elif self.float_stack:      # mode 1
             if not self.obj_stack:
                 self.set_sel_mode('items')
                 self.updateMessageBar(
-                    'Pick a straight element to be parallel to.')
+                    'Pick a straight element to be parallel to')
             elif not self.pt_stack:
                 self.set_sel_mode('pnt')
-                self.updateMessageBar('Pick on (+) side of line.')
+                self.updateMessageBar('Pick on (+) side of line')
             else:
                 obj = self.obj_stack.pop()
                 p = self.pt_stack.pop()
@@ -1154,7 +1185,9 @@ class Draw(AppShell.AppShell):
                     baseline = cnvrt_2pts_to_coef(p1, p2)
             if not self.pt_stack:
                 self.set_sel_mode('pnt')
-                self.updateMessageBar('Select point for new parallel line.')
+                message = 'Select point for new parallel line'
+                message += self.shift_key_advice
+                self.updateMessageBar(message)
                 if pnt:
                     p = self.cp2ep(pnt)
                     parline = para_line(baseline, p)
@@ -1166,11 +1199,14 @@ class Draw(AppShell.AppShell):
 
     def perpcl(self, pnt=None):
         """Create a perpendicular cline through a selected point."""
+        
         if not self.obj_stack:
-            self.updateMessageBar('Pick line to be perpendicular to.')
+            self.updateMessageBar('Pick line to be perpendicular to')
             self.set_sel_mode('items')
         else:
-            self.updateMessageBar('Select pt for perpendicular construction.')
+            message = 'Select point for perpendicular construction'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
             self.set_sel_mode('pnt')
             obj = self.obj_stack[0]
             if not obj:
@@ -1195,11 +1231,12 @@ class Draw(AppShell.AppShell):
 
     def cltan1(self, p1=None):
         '''Create a construction line through a pt, tangent to a circle.'''
+        
         if not self.obj_stack:
-            self.updateMessageBar('Pick circle.')
+            self.updateMessageBar('Pick circle')
             self.set_sel_mode('items')
         elif self.obj_stack and not self.pt_stack:
-            self.updateMessageBar('specify point.')
+            self.updateMessageBar('specify point')
             self.set_sel_mode('pnt')
         elif self.obj_stack and self.pt_stack:
             item = self.obj_stack.pop()[0]
@@ -1218,11 +1255,12 @@ class Draw(AppShell.AppShell):
 
     def cltan2(self, p1=None):
         '''Create a construction line tangent to 2 circles.'''
+        
         if not self.obj_stack:
-            self.updateMessageBar('Pick first circle.')
+            self.updateMessageBar('Pick first circle')
             self.set_sel_mode('items')
         elif len(self.obj_stack) == 1:
-            self.updateMessageBar('Pick 2nd circle.')
+            self.updateMessageBar('Pick 2nd circle')
         elif len(self.obj_stack) == 2:
             item1 = self.obj_stack.pop()[0]
             item2 = self.obj_stack.pop()[0]
@@ -1243,14 +1281,16 @@ class Draw(AppShell.AppShell):
     def ccirc(self, p1=None):
         '''Create a construction circle from center point and
         perimeter point or radius.'''
+        
         self.circ(p1=p1, constr=1)
 
     def cccirc(self, p1=None):
         '''Create a construction circle concentric to an existing circle,
         at a "relative" radius.'''
+        
         if not self.obj_stack:
             self.set_sel_mode('items')
-            self.updateMessageBar('Select existing circle.')
+            self.updateMessageBar('Select existing circle')
         elif self.obj_stack and not (self.float_stack or self.pt_stack):
             item = self.obj_stack[0][0]
             self.coords = None
@@ -1260,7 +1300,7 @@ class Draw(AppShell.AppShell):
                 self.coords = self.gc_dict[item]
             self.set_sel_mode('pnt')
             self.updateMessageBar(
-                'Enter relative radius or specify point on new circle.')
+                'Enter relative radius or specify point on new circle')
             if self.coords and p1:
                 pc, r0 = self.coords
                 ep = self.cp2ep(p1)
@@ -1280,12 +1320,13 @@ class Draw(AppShell.AppShell):
 
     def cc3p(self, p3=None):
         """Create a constr circle from 3 pts on circle."""
+        
         if not self.pt_stack:
-            self.updateMessageBar('Pick first point on circle.')
+            self.updateMessageBar('Pick first point on circle')
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Pick second point on circle.')
+            self.updateMessageBar('Pick second point on circle')
         elif len(self.pt_stack) == 2:
-            self.updateMessageBar('Pick third point on circle.')
+            self.updateMessageBar('Pick third point on circle')
             if p3:
                 p3 = self.cp2ep(p3)
                 p2 = self.pt_stack[1]
@@ -1316,6 +1357,7 @@ class Draw(AppShell.AppShell):
     def line_gen(self, coords, color='white', tag='g', arrow=None):
         """Create line segment between two pts in engineering (mm) coords.
         Return item ID of line."""
+        
         p1, p2 = coords
         xa, ya = self.ep2cp(p1)
         xb, yb = self.ep2cp(p2)
@@ -1326,15 +1368,18 @@ class Draw(AppShell.AppShell):
     def gline_gen(self, coords):
         """Create line segment between two pts in engineering (mm) coords.
         Store coords in gl_dict."""
+        
         tkid = self.line_gen(coords)
         self.gl_dict[tkid] = coords
         
     def line(self, p1=None):
         '''Create line segment between 2 points. Enable 'rubber line' mode'''
+        
         rc = self.rubbercolor
         if not self.pt_stack:
-            self.updateMessageBar(
-                'Pick start point of line or enter coords.')
+            message = 'Pick start point of line or enter coords'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif self.pt_stack and p1:
             p0 = self.pt_stack[-1]
             x, y = self.ep2cp(p0)   # fixed first point (canvas coords)
@@ -1353,8 +1398,7 @@ class Draw(AppShell.AppShell):
             self.rtext = self.canvas.create_text(xr+20, yr-20,
                                                  text=strcoords,
                                                  fill=self.textcolor)
-            self.updateMessageBar(
-                'specify end point of line.')
+            self.updateMessageBar('Specify end point of line')
         elif len(self.pt_stack) > 1:
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
@@ -1368,15 +1412,17 @@ class Draw(AppShell.AppShell):
 
     def poly(self, p1=None):
         '''Create chain of line segments, enabling 'rubber line' mode.'''
+        
         if not self.pt_stack:
             self.poly_start_pt = None
-            self.updateMessageBar('Pick start point or enter coords.')
+            message = 'Pick start point or enter coords'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         elif self.pt_stack and p1:
             if not self.poly_start_pt:
                 self.poly_start_pt = self.pt_stack[-1]
             self.line(p1)   # This will generate rubber line
-            self.updateMessageBar(
-                'Pick next point or enter coords.')
+            self.updateMessageBar('Pick next point or enter coords')
         elif len(self.pt_stack) > 1:
             lastpt = self.pt_stack[-1]
             self.line()     # This will pop 2 points off stack
@@ -1385,13 +1431,14 @@ class Draw(AppShell.AppShell):
     
     def rect(self, p2=None):
         '''Generate a rectangle from 2 diagonally opposite corners.'''
+        
         rc = self.rubbercolor
         if not self.pt_stack:
             self.updateMessageBar(
-                'Pick first corner of rectangle or enter coords.')
+                'Pick first corner of rectangle or enter coords')
         elif len(self.pt_stack) == 1 and p2:
             self.updateMessageBar(
-                'Pick opposite corner of rectangle or enter coords.')
+                'Pick opposite corner of rectangle or enter coords')
             p1 = self.pt_stack[0]
             x1, y1 = self.ep2cp(p1)
             x2, y2 = p2
@@ -1419,6 +1466,7 @@ class Draw(AppShell.AppShell):
         """Create circle at center pc, radius r in engineering (mm) coords.
         Handle rubber circles, construction, and regular circles, storing
         coords in appropriate dictionary."""
+        
         ctr, rad = coords       # ECS
         x, y = self.ep2cp(ctr)
         r = self.canvas.w2c_dx(rad)
@@ -1450,11 +1498,12 @@ class Draw(AppShell.AppShell):
             
     def circ(self, p1=None, constr=0):
         '''Generate a circle from center pnt and perimeter pnt or radius.'''
+        
         finish = 0
         if not self.pt_stack:
-            self.updateMessageBar('Pick center of circle or enter coords.')
+            self.updateMessageBar('Pick center of circle or enter coords')
         elif len(self.pt_stack) == 1 and p1 and not self.float_stack:
-            self.updateMessageBar('Specify point on circle or radius.')
+            self.updateMessageBar('Specify point on circle or radius')
             pc = self.pt_stack[0]
             p1 = self.cp2ep(p1)
             r = p2p_dist(pc, p1)
@@ -1473,12 +1522,13 @@ class Draw(AppShell.AppShell):
 
     def arcc2p(self, p2=None):
         """Create an arc from center pt, start pt and end pt."""
+        
         if not self.pt_stack:
-            self.updateMessageBar('Specify center of arc.')
+            self.updateMessageBar('Specify center of arc')
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Specify start point of arc.')
+            self.updateMessageBar('Specify start point of arc')
         elif len(self.pt_stack) == 2:
-            self.updateMessageBar('Specify end point of arc.')
+            self.updateMessageBar('Specify end point of arc')
             if p2:
                 p2 = self.cp2ep(p2)
                 p1 = self.pt_stack[1]
@@ -1499,12 +1549,13 @@ class Draw(AppShell.AppShell):
 
     def arc3p(self, p3=None):
         """Create an arc from start pt, end pt, and 3rd pt on the arc."""
+        
         if not self.pt_stack:
-            self.updateMessageBar('Specify start of arc.')
+            self.updateMessageBar('Specify start of arc')
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Specify end of arc.')
+            self.updateMessageBar('Specify end of arc')
         elif len(self.pt_stack) == 2:
-            self.updateMessageBar('Specify point on arc.')
+            self.updateMessageBar('Specify point on arc')
             if p3:
                 p3 = self.cp2ep(p3)
                 p2 = self.pt_stack[1]
@@ -1539,6 +1590,7 @@ class Draw(AppShell.AppShell):
         a0  = start angle in degrees measured CCW from 3 o'clock position
         a1  = end angle in degrees measured CCW from 3 o'clock position
         """
+        
         pc, rad, a0, a1 = coords
         ext = a1-a0
         if ext<0:
@@ -1566,11 +1618,11 @@ class Draw(AppShell.AppShell):
 
     def slot(self, p1=None):
         if not self.pt_stack:
-            self.updateMessageBar('Specify first point for slot.')
+            self.updateMessageBar('Specify first point for slot')
         elif len(self.pt_stack) == 1:
-            self.updateMessageBar('Specify second point for slot.')
+            self.updateMessageBar('Specify second point for slot')
         elif len(self.pt_stack) == 2 and not self.float_stack:
-            self.updateMessageBar('Enter slot width.')
+            self.updateMessageBar('Enter slot width')
         elif len(self.pt_stack) == 2 and self.float_stack:
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
@@ -1600,12 +1652,15 @@ class Draw(AppShell.AppShell):
 
     def split(self, p1=None):
         """Split straight line segment at a point."""
+        
         if not self.obj_stack:
             self.set_sel_mode('items')
-            self.updateMessageBar('Pick straight line to split.')
+            self.updateMessageBar('Pick straight line to split')
         elif self.obj_stack and not self.pt_stack:
             self.set_sel_mode('pnt')
-            self.updateMessageBar('Pick point for split.')
+            message = 'Pick point for split'
+            message += self.shift_key_advice
+            self.updateMessageBar(message)
         else:
             line = self.obj_stack.pop()[0]
             p0 = self.pt_stack.pop()
@@ -1615,11 +1670,12 @@ class Draw(AppShell.AppShell):
 
     def join(self, p1=None):
         """Join 2 adjacent line segments. (Need not be colinear.)"""
+        
         if not self.obj_stack:
             self.set_sel_mode('items')
-            self.updateMessageBar('Pick first line to join.')
+            self.updateMessageBar('Pick first line to join')
         elif len(self.obj_stack) == 1:
-            self.updateMessageBar('Pick second line to join.')
+            self.updateMessageBar('Pick second line to join')
         elif len(self.obj_stack) == 2:
             item2 = self.obj_stack.pop()[0]
             item1 = self.obj_stack.pop()[0]
@@ -1644,6 +1700,7 @@ class Draw(AppShell.AppShell):
     def modify_line_coords(self, item, coords):
         """Modify the coordinates of a line segment to new
         values. Update self.gl_dict, too."""
+        
         self.gl_dict[item] = coords
         p1, p2 = coords
         cx1, cy1 = self.ep2cp(p1)
@@ -1652,11 +1709,12 @@ class Draw(AppShell.AppShell):
 
     def fillet(self, p1=None):
         """Create a fillet of radius r at the common corner of 2 lines."""
+        
         if not self.obj_stack and not self.float_stack:
-            self.updateMessageBar('Enter radius for fillet.')
+            self.updateMessageBar('Enter radius for fillet')
         elif not self.obj_stack:
             self.set_sel_mode('items')
-            self.updateMessageBar('Pick corner to apply fillet.')
+            self.updateMessageBar('Pick corner to apply fillet')
         elif self.obj_stack and self.float_stack:
             rw = self.float_stack[-1]*self.unitscale
             rc = self.canvas.w2c_dx(rw)
@@ -1692,6 +1750,7 @@ class Draw(AppShell.AppShell):
     def translate(self, p=None):
         """Move (or copy) selected geometry item(s) by two points. 
         To copy items, enter number of copies. Otherwise, item(s) will be moved (not copied)."""
+        
         if not self.obj_stack and not self.pt_stack and not self.float_stack:
             self.set_sel_mode('items')
             self.allow_list = 1
@@ -1701,9 +1760,9 @@ class Draw(AppShell.AppShell):
         elif self.obj_stack and not self.pt_stack:
             self.set_sel_mode('pnt')
             self.allow_list = 0
-            self.updateMessageBar('Select "FROM" point.')
+            self.updateMessageBar('Select "FROM" point')
         elif self.obj_stack and len(self.pt_stack) == 1:
-            self.updateMessageBar('Select "TO" point.')
+            self.updateMessageBar('Select "TO" point')
         elif self.obj_stack and len(self.pt_stack) == 2:
             if self.float_stack:
                 repeat = int(self.float_stack.pop())
@@ -1754,6 +1813,7 @@ class Draw(AppShell.AppShell):
     def rotate(self, p=None):
         """Move (or copy) selected geometry item(s) by rotating about a point. 
         To copy items, enter number of copies. Otherwise, item(s) will be moved (not copied)."""
+        
         if not self.obj_stack and not self.pt_stack and not self.float_stack:
             self.repeat = 0   # No copies. "move" mode is intended.
             self.set_sel_mode('items')
@@ -1766,7 +1826,7 @@ class Draw(AppShell.AppShell):
                 self.repeat = int(self.float_stack.pop())   # number of copies
             self.set_sel_mode('pnt')
             self.allow_list = 0
-            self.updateMessageBar('Select center of rotation.')
+            self.updateMessageBar('Select center of rotation')
         elif self.obj_stack and self.pt_stack and not self.float_stack:
             self.updateMessageBar('Specify angle of rotation in degrees')
         elif self.obj_stack and self.pt_stack and self.float_stack:
