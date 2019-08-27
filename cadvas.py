@@ -1662,7 +1662,15 @@ class Draw(AppShell.AppShell):
             message += self.shift_key_advice
             self.updateMessageBar(message)
         else:
-            line = self.obj_stack.pop()[0]
+            # When picking a geometry line that overlays a
+            # construction line, need to throw out the c-line
+            item_tuple = self.obj_stack.pop()
+            for item in item_tuple:
+                if item in self.gl_dict.keys():
+                    line = item
+                    # print("found geometry line")
+                else:
+                    # print("found something else")
             p0 = self.pt_stack.pop()
             p1, p2 = self.gl_dict[line]
             self.modify_line_coords(line, (p0, p2))
