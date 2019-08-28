@@ -42,6 +42,7 @@ def dxf2native(filename):
     gldict = {}
     gcdict = {}
     gadict = {}
+    txdict = {}
     k = 0
     dwg = ezdxf.readfile(filename)
     for e in dwg.modelspace():  # e = dxf entity
@@ -66,12 +67,19 @@ def dxf2native(filename):
                       e.dxf.start_angle, e.dxf.end_angle)
             k+=1
             gadict[k] = coords
+        elif e.dxftype() == 'TEXT':
+            # print(e.dxfattribs())
+            x, y = e.dxfattribs()['align_point']
+            text = e.dxfattribs()['text']
+            k += 1
+            txdict[k] = (x, y, text)
 
     drawdict = {}
     drawdict['cl'] = cllist
     drawdict['gl'] = gldict
     drawdict['gc'] = gcdict
     drawdict['ga'] = gadict
+    drawdict['tx'] = txdict
     return drawdict
 
 
@@ -89,5 +97,20 @@ def native2dxf(drawdict, dxf_filename):
     for center, radius in drawdict['gc'].values():
         msp.add_circle(center, radius) 
     for center, radius, start, end in drawdict['ga'].values():
-        msp.add_arc(center, radius, start, end) 
+        msp.add_arc(center, radius, start, end)
+    for x, y, text in drawdict['tx'].values():
+        dxfattribs = dict((('align_point',(x, y)),
+                           ('halign', 2),
+                           ('height', 1.0),
+                           ('insert', (x, y)),
+                           ('layer', '0'),
+                           ('oblique', 0.0),
+                           ('paperspace', 0),
+                           ('rotation', 0.0),
+                           ('style', 'STANDARD'),
+                           ('text', text),
+                           ('text_generation_flag', 0),
+                           ('valign', 2),
+                           ('width', 1.0)))
+        msp.add_text(text, dxfattribs)
     dwg.saveas(dxf_filename)

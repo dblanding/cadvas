@@ -1671,6 +1671,7 @@ class Draw(AppShell.AppShell):
                     # print("found geometry line")
                 else:
                     # print("found something else")
+                    pass
             p0 = self.pt_stack.pop()
             p1, p2 = self.gl_dict[line]
             self.modify_line_coords(line, (p0, p2))
