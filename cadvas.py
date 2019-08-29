@@ -477,7 +477,7 @@ class Draw(AppShell.AppShell):
     dimcolor = 'red'        # color of dimensions
     textcolor = 'cyan'      # default text color
     textsize = 10           # default text size
-    textstyle = 'Courier'   # default text style
+    textstyle = 'Arial'     # default text style
     rubbercolor = 'yellow'  # color of (temporary) rubber elements
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
@@ -618,8 +618,9 @@ class Draw(AppShell.AppShell):
             for coords in drawdict['dl'].values():
                 self.dim_gen(coords)
         if 'tx' in keys:
-            for coords in drawdict['tx'].values():
-                self.text_gen(coords)
+            for attribs in drawdict['tx'].values():
+                handle = self.text_gen(attribs)
+                self.tx_dict[handle] = attribs
         self.units = drawdict.get('units', 'mm')
         self.set_units(self.units)
         self.view_fit()
