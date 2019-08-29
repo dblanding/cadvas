@@ -2019,7 +2019,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def text_gen(self, attribs, tag='t'):
-        """Generate text."""
+        """Generate text, return handle."""
 
         x, y = attribs['coords']
         text = attribs['text']
@@ -2030,9 +2030,9 @@ class Draw(AppShell.AppShell):
         zoom_scale = self.canvas.scl.x
         zoomed_font_size = int(size * zoom_scale)
         font = (style, zoomed_font_size)
-        id = self.canvas.create_text(u, v, text=text, tags=tag,
-                                     fill=color, font=font)
-        self.tx_dict[id] = attribs
+        handle = self.canvas.create_text(u, v, text=text, tags=tag,
+                                         fill=color, font=font)
+        return handle
 
     def regen_all_text(self, event=None):
         """Delete all existing text, clear tx_dict, and regenerate.
@@ -2043,7 +2043,8 @@ class Draw(AppShell.AppShell):
         txtlist = list(self.tx_dict.values())
         self.del_all_t()
         for attribs in txtlist:
-            self.text_gen(attribs)
+            handle = self.text_gen(attribs)
+            self.tx_dict[handle] = attribs
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
@@ -2066,7 +2067,8 @@ class Draw(AppShell.AppShell):
                             ('style', self.textstyle),
                             ('size', self.textsize),
                             ('color', self.textcolor)))
-            self.text_gen(attribs)
+            handle = self.text_gen(attribs)
+            self.tx_dict[handle] = attribs
             self.text = None
             if self.rubber:
                 self.canvas.delete(self.rubber)
@@ -2074,20 +2076,45 @@ class Draw(AppShell.AppShell):
                 self.op = self.op_stack.pop()
 
     def text_move(self, p=None):
-        """Move existing text on drawing."""
-        rc = self.rubbercolor
+        """Move existing text to new point."""
+        self.attribs = {}
         if not self.obj_stack:
             self.set_sel_mode('items')
             self.updateMessageBar('Select text to move.')
-        else:
-            item = self.obj_stack.pop()[0]
-            if item in self.tx_dict:
-                self.text = self.tx_dict[item][2]
-                self.set_sel_mode('pnt')
-                self.op_stack.append(self.op)
-                self.op = 'text_enter'
-                self.canvas.delete(item)
-                del self.tx_dict[item]
+            
+        elif not self.pt_stack:
+            for item in self.obj_stack:
+                for handle in item:
+                    print(handle)
+                    if handle in self.tx_dict:
+                        self.attribs = self.tx_dict[handle]
+                        print(self.attribs)
+                    if p:  # mouse coordinates supplied by zooming
+                        x, y = p
+                        u, v = self.cp2ep((x, y))
+                        p = (u, v)
+                        if self.rubber:
+                            self.canvas.delete(self.rubber)
+                        rubber_attribs = self.attribs.copy()
+                        rubber_attribs['coords'] = p
+                        rubber_attribs['color'] = self.rubbercolor
+                        print(rubber_attribs)
+                        self.rubber = self.text_gen(rubber_attribs, tag='r')
+                    self.updateMessageBar('Pick new location for center of text')
+                    self.set_sel_mode('pnt')
+        elif self.pt_stack:
+            newpoint = self.pt_stack.pop()
+            print('newpoint: ', newpoint)
+            handle = self.obj_stack.pop()[0]
+            if handle in self.tx_dict:
+                attribs = self.tx_dict[handle]
+                attribs['coords'] = newpoint
+                print(attribs)
+            if self.rubber:
+                self.canvas.delete(self.rubber)
+                self.rubber = None
+            self.regen_all_text()
+            print(self.tx_dict)
 
     #=======================================================================
     # Delete
