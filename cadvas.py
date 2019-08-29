@@ -475,7 +475,9 @@ class Draw(AppShell.AppShell):
     filename = None         # name of file currently loaded (or saved as)
     dimgap = 10             # extension line gap (in canvas units) 
     dimcolor = 'red'        # color of dimensions
-    textcolor = 'cyan'      # text color
+    textcolor = 'cyan'      # default text color
+    textsize = 10           # default text size
+    textstyle = 'Courier'   # default text style
     rubbercolor = 'yellow'  # color of (temporary) rubber elements
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
@@ -621,7 +623,7 @@ class Draw(AppShell.AppShell):
         self.units = drawdict.get('units', 'mm')
         self.set_units(self.units)
         self.view_fit()
-        self.save_delta()
+        self.save_delta()  # undo/redo thing
 
     def close(self):
         self.quit()
@@ -645,6 +647,7 @@ class Draw(AppShell.AppShell):
     def regen(self, event=None):
         self.regen_all_cl()
         self.regen_all_dims()
+        self.regen_all_text()
 
     def set_units(self, units):
         if units in self.unit_dict.keys():
@@ -2009,18 +2012,38 @@ class Draw(AppShell.AppShell):
 
     #=======================================================================
     # Text
-    # text has coordinates:         (x, y, text)
+    # text paramaters are contained in a dict by attribute name:
+    # 'coords'(x, y), 'text', 'style', 'size', 'color'
     # where x, y are the coordinates of the center of the text
+    # and font is defined by style, size, color
     #=======================================================================
 
-    def text_gen(self, coords, color=None, tag='t'):
-        """Generate text with ctr at coords x, y."""
-        if not color:
-            color = self.textcolor
-        x, y, text = coords
+    def text_gen(self, attribs, tag='t'):
+        """Generate text."""
+
+        x, y = attribs['coords']
+        text = attribs['text']
+        style = attribs['style']
+        size = attribs['size']
+        color = attribs['color']
         u, v = self.ep2cp((x, y))
-        id = self.canvas.create_text(u, v, text=text, fill=color, tags=tag)
-        self.tx_dict[id] = coords
+        zoom_scale = self.canvas.scl.x
+        zoomed_font_size = int(size * zoom_scale)
+        font = (style, zoomed_font_size)
+        id = self.canvas.create_text(u, v, text=text, tags=tag,
+                                     fill=color, font=font)
+        self.tx_dict[id] = attribs
+
+    def regen_all_text(self, event=None):
+        """Delete all existing text, clear tx_dict, and regenerate.
+
+        This needs to be done after zoom because text size is defined
+        in terms of canvas pixels and doesn't change size with zoom."""
+        
+        txtlist = list(self.tx_dict.values())
+        self.del_all_t()
+        for attribs in txtlist:
+            self.text_gen(attribs)
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
@@ -2037,8 +2060,13 @@ class Draw(AppShell.AppShell):
                 self.rubber = self.canvas.create_text(x, y, text=self.text,
                                                       fill=rc, tags='r')
         elif self.pt_stack:
-            x, y = self.pt_stack.pop()
-            self.text_gen((x, y, self.text))
+            p = self.pt_stack.pop()
+            attribs = dict((('coords', p),
+                            ('text', self.text),
+                            ('style', self.textstyle),
+                            ('size', self.textsize),
+                            ('color', self.textcolor)))
+            self.text_gen(attribs)
             self.text = None
             if self.rubber:
                 self.canvas.delete(self.rubber)
