@@ -2044,11 +2044,13 @@ class Draw(AppShell.AppShell):
         This needs to be done after zoom because text size is defined
         in terms of canvas pixels and doesn't change size with zoom."""
         
-        txtlist = list(self.tx_dict.values())
+        tx_obj_list = list(self.tx_dict.values())
+        attribs_list = [tx_obj.attribs for tx_obj in tx_obj_list]
         self.del_all_t()
-        for attribs in txtlist:
-            handle = self.text_gen(attribs)
-            self.tx_dict[handle] = attribs
+        for attribs in attribs_list:
+            tx = entities.TxEntity(attribs)
+            handle = self.text_gen(tx)
+            self.tx_dict[handle] = tx
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
