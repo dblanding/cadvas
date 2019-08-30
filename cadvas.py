@@ -32,6 +32,7 @@ from   zooming import Zooming
 import AppShell
 from   toolbarbutton import ToolBarButton
 import tkrpncalc
+import entities
 
 version = '0.4.0'
 date = 'July 2019'
@@ -361,7 +362,6 @@ def rotate_pt(pt, ang, ctr):
     
 
 #===========================================================================
-
 
 class Draw(AppShell.AppShell):
     """A 2D CAD application using the Tkinter canvas. The canvas is wrapped
@@ -2016,20 +2016,20 @@ class Draw(AppShell.AppShell):
 
     #=======================================================================
     # Text
-    # text paramaters are contained in a dict by attribute name:
-    # 'coords'(x, y), 'text', 'style', 'size', 'color'
-    # where x, y are the coordinates of the center of the text
-    # and font is defined by style, size, color
+    # Text parameters are stored as attributes of a Tx_Entity object.
+    # attribs = (x,y), text, style, size, color
+    # where x, y are the coordinates of the center of the text.
+    # style, size, color define the font.
     #=======================================================================
 
-    def text_gen(self, attribs, tag='t'):
+    def text_gen(self, txt_obj, tag='t'):
         """Generate text, return handle."""
 
-        x, y = attribs['coords']
-        text = attribs['text']
-        style = attribs['style']
-        size = attribs['size']
-        color = attribs['color']
+        x, y = txt_obj.coords
+        text = txt_obj.text
+        style = txt_obj.style
+        size = txt_obj.size
+        color =txt_obj. color
         u, v = self.ep2cp((x, y))
         zoom_scale = self.canvas.scl.x
         zoomed_font_size = int(size * zoom_scale)
@@ -2066,13 +2066,11 @@ class Draw(AppShell.AppShell):
                                                       fill=rc, tags='r')
         elif self.pt_stack:
             p = self.pt_stack.pop()
-            attribs = dict((('coords', p),
-                            ('text', self.text),
-                            ('style', self.textstyle),
-                            ('size', self.textsize),
-                            ('color', self.textcolor)))
-            handle = self.text_gen(attribs)
-            self.tx_dict[handle] = attribs
+            attribs = (p, self.text, self.textstyle,
+                       self.textsize, self.textcolor)
+            tx = entities.TxEntity(attribs)
+            handle = self.text_gen(tx)
+            self.tx_dict[handle] = tx
             self.text = None
             if self.rubber:
                 self.canvas.delete(self.rubber)
@@ -2114,8 +2112,7 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(self.rubber)
                 self.rubber = None
             self.regen_all_text()
-            print(self.tx_dict)
-
+            
     #=======================================================================
     # Delete
     #=======================================================================
@@ -2310,9 +2307,11 @@ class Draw(AppShell.AppShell):
 
     def save_delta(self):
         """After a drawing change, put prev on undo stack."""
+        print('Running save_delta')
         curr = self.get_curr()
         prev = self.get_prev()
         if curr != prev:
+            print('curr not equal to prev')
             self.undo_stack.append(prev)
             self.put_prev(curr)
 
