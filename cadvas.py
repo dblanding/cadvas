@@ -617,10 +617,13 @@ class Draw(AppShell.AppShell):
         if 'dl' in keys:
             for coords in drawdict['dl'].values():
                 self.dim_gen(coords)
-        if 'tx' in keys:
-            for attribs in drawdict['tx'].values():
-                handle = self.text_gen(attribs)
-                self.tx_dict[handle] = attribs
+        try:
+            if 'tx' in keys:
+                for attribs in drawdict['tx'].values():
+                    handle = self.text_gen(attribs)
+                    self.tx_dict[handle] = attribs
+        except:
+            pass
         self.units = drawdict.get('units', 'mm')
         self.set_units(self.units)
         self.view_fit()
@@ -630,7 +633,7 @@ class Draw(AppShell.AppShell):
         self.quit()
 
     def view_fit(self):
-        bbox = self.canvas.bbox('g', 'd')
+        bbox = self.canvas.bbox('g', 'd', 't')
         if bbox:
             xsize, ysize = bbox[2]-bbox[0], bbox[3]-bbox[1]
             xc, yc = (bbox[2]+bbox[0])/2, (bbox[3]+bbox[1])/2
