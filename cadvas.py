@@ -477,7 +477,7 @@ class Draw(AppShell.AppShell):
     dimcolor = 'red'        # color of dimensions
     textcolor = 'cyan'      # default text color
     textsize = 10           # default text size
-    textstyle = 'Arial'     # default text style
+    textstyle = 'Calibri'   # default text style
     rubbercolor = 'yellow'  # color of (temporary) rubber elements
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
@@ -2086,10 +2086,9 @@ class Draw(AppShell.AppShell):
         elif not self.pt_stack:
             for item in self.obj_stack:
                 for handle in item:
-                    print(handle)
                     if handle in self.tx_dict:
                         self.attribs = self.tx_dict[handle]
-                        print(self.attribs)
+                        
                     if p:  # mouse coordinates supplied by zooming
                         x, y = p
                         u, v = self.cp2ep((x, y))
@@ -2099,18 +2098,15 @@ class Draw(AppShell.AppShell):
                         rubber_attribs = self.attribs.copy()
                         rubber_attribs['coords'] = p
                         rubber_attribs['color'] = self.rubbercolor
-                        print(rubber_attribs)
                         self.rubber = self.text_gen(rubber_attribs, tag='r')
                     self.updateMessageBar('Pick new location for center of text')
                     self.set_sel_mode('pnt')
         elif self.pt_stack:
             newpoint = self.pt_stack.pop()
-            print('newpoint: ', newpoint)
             handle = self.obj_stack.pop()[0]
             if handle in self.tx_dict:
                 attribs = self.tx_dict[handle]
                 attribs['coords'] = newpoint
-                print(attribs)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None

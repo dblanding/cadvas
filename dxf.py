@@ -69,10 +69,17 @@ def dxf2native(filename):
             gadict[k] = coords
         elif e.dxftype() == 'TEXT':
             # print(e.dxfattribs())
-            x, y = e.dxfattribs()['align_point']
+            coords = e.dxfattribs()['align_point']
             text = e.dxfattribs()['text']
+            style = e.dxfattribs()['style']
+            size = e.dxfattribs()['height']
+            attribs = dict((('coords', coords),
+                            ('text', text),
+                            ('style', style),
+                            ('size', size),
+                            ('color', 'cyan')))
             k += 1
-            txdict[k] = (x, y, text)
+            txdict[k] = attribs
 
     drawdict = {}
     drawdict['cl'] = cllist
@@ -98,16 +105,21 @@ def native2dxf(drawdict, dxf_filename):
         msp.add_circle(center, radius) 
     for center, radius, start, end in drawdict['ga'].values():
         msp.add_arc(center, radius, start, end)
-    for x, y, text in drawdict['tx'].values():
-        dxfattribs = dict((('align_point',(x, y)),
+    for attribs in drawdict['tx'].values():
+        coords = attribs['coords']
+        text = attribs['text']
+        style = attribs['style']
+        size = attribs['size']
+        color = attribs['color']
+        dxfattribs = dict((('align_point', coords),
                            ('halign', 2),
-                           ('height', 1.0),
-                           ('insert', (x, y)),
+                           ('height', size),
+                           ('insert', coords),
                            ('layer', '0'),
                            ('oblique', 0.0),
                            ('paperspace', 0),
                            ('rotation', 0.0),
-                           ('style', 'STANDARD'),
+                           ('style', style),
                            ('text', text),
                            ('text_generation_flag', 0),
                            ('valign', 2),
