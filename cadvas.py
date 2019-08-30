@@ -2068,8 +2068,8 @@ class Draw(AppShell.AppShell):
                                                       fill=rc, tags='r')
         elif self.pt_stack:
             p = self.pt_stack.pop()
-            attribs = (p, self.text, self.textstyle,
-                       self.textsize, self.textcolor)
+            attribs = [p, self.text, self.textstyle,
+                       self.textsize, self.textcolor]
             tx = entities.TxEntity(attribs)
             handle = self.text_gen(tx)
             self.tx_dict[handle] = tx
@@ -2081,35 +2081,37 @@ class Draw(AppShell.AppShell):
 
     def text_move(self, p=None):
         """Move existing text to new point."""
-        self.attribs = {}
+
         if not self.obj_stack:
             self.set_sel_mode('items')
             self.updateMessageBar('Select text to move.')
-            
         elif not self.pt_stack:
             for item in self.obj_stack:
                 for handle in item:
                     if handle in self.tx_dict:
-                        self.attribs = self.tx_dict[handle]
-                        
-                    if p:  # mouse coordinates supplied by zooming
+                        rubber_tx = self.tx_dict[handle]
+                    if p:  # mouse coordinates supplied by Zooming
                         x, y = p
                         u, v = self.cp2ep((x, y))
                         p = (u, v)
                         if self.rubber:
                             self.canvas.delete(self.rubber)
-                        rubber_attribs = self.attribs.copy()
-                        rubber_attribs['coords'] = p
-                        rubber_attribs['color'] = self.rubbercolor
-                        self.rubber = self.text_gen(rubber_attribs, tag='r')
+                        rubber_tx.coords = p
+                        self.rubber = self.text_gen(rubber_tx, tag='r')
                     self.updateMessageBar('Pick new location for center of text')
                     self.set_sel_mode('pnt')
         elif self.pt_stack:
             newpoint = self.pt_stack.pop()
             handle = self.obj_stack.pop()[0]
             if handle in self.tx_dict:
-                attribs = self.tx_dict[handle]
-                attribs['coords'] = newpoint
+                tx = self.tx_dict[handle]
+                attribs = tx.attribs
+                attribs[0] = newpoint
+                new_tx = entities.TxEntity(attribs)
+                new_handle = self.text_gen(new_tx)
+                self.tx_dict[new_handle] = tx
+                del self.tx_dict[handle]
+                self.canvas.delete(handle)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
