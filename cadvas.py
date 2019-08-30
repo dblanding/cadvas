@@ -2016,7 +2016,7 @@ class Draw(AppShell.AppShell):
 
     #=======================================================================
     # Text
-    # Text parameters are stored as attributes of a Tx_Entity object.
+    # Text parameters are stored as attributes of a TxObject.
     # attribs = (x,y), text, style, size, color
     # where x, y are the coordinates of the center of the text.
     # style, size, color define the font.
@@ -2045,10 +2045,10 @@ class Draw(AppShell.AppShell):
         in terms of canvas pixels and doesn't change size with zoom."""
         
         tx_obj_list = list(self.tx_dict.values())
-        attribs_list = [tx_obj.attribs for tx_obj in tx_obj_list]
+        attribs_list = [tx_obj.get_attribs() for tx_obj in tx_obj_list]
         self.del_all_t()
         for attribs in attribs_list:
-            tx = entities.TxEntity(attribs)
+            tx = entities.TxObject(attribs)
             handle = self.text_gen(tx)
             self.tx_dict[handle] = tx
 
@@ -2068,9 +2068,9 @@ class Draw(AppShell.AppShell):
                                                       fill=rc, tags='r')
         elif self.pt_stack:
             p = self.pt_stack.pop()
-            attribs = [p, self.text, self.textstyle,
-                       self.textsize, self.textcolor]
-            tx = entities.TxEntity(attribs)
+            attribs = (p, self.text, self.textstyle,
+                       self.textsize, self.textcolor)
+            tx = entities.TxObject(attribs)
             handle = self.text_gen(tx)
             self.tx_dict[handle] = tx
             self.text = None
@@ -2105,11 +2105,12 @@ class Draw(AppShell.AppShell):
             handle = self.obj_stack.pop()[0]
             if handle in self.tx_dict:
                 tx = self.tx_dict[handle]
-                attribs = tx.attribs
+                attribs = tx.get_attribs()
                 attribs[0] = newpoint
-                new_tx = entities.TxEntity(attribs)
+                attribs = tuple(attribs)
+                new_tx = entities.TxObject(attribs)
                 new_handle = self.text_gen(new_tx)
-                self.tx_dict[new_handle] = tx
+                self.tx_dict[new_handle] = new_tx
                 del self.tx_dict[handle]
                 self.canvas.delete(handle)
             if self.rubber:
