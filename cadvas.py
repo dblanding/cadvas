@@ -1483,15 +1483,17 @@ class Draw(AppShell.AppShell):
             d = (x1, y2)
             sides = ((a, b), (b, c), (c, d), (d, a))
             for p in sides:
-                self.gline_gen((p[0], p[1]))
+                coords = (p[0], p[1])
+                attribs = (coords, self.geomcolor)
+                gl = entities.GL(attribs)
+                self.gline_gen(gl)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
 
     def circ_gen(self, coords, rubber=0, constr=0):
         """Create circle at center pc, radius r in engineering (mm) coords.
-        Handle rubber circles, construction, and regular circles, storing
-        coords in appropriate dictionary."""
+        Handle rubber circles, construction, and geom circles."""
         
         ctr, rad = coords       # ECS
         x, y = self.ep2cp(ctr)
@@ -1506,10 +1508,10 @@ class Draw(AppShell.AppShell):
                                                       outline=color, tags=tag)
         else:
             if constr:
-                color = 'magenta'
+                color = self.constcolor
                 tag = 'c'
             else:
-                color = 'white'
+                color = self.geomcolor
                 tag = 'g'
             tkid = self.canvas.create_oval(x-r, y-r, x+r, y+r,
                                            outline=color, tags=tag)
@@ -1533,7 +1535,8 @@ class Draw(AppShell.AppShell):
             pc = self.pt_stack[0]
             p1 = self.cp2ep(p1)
             r = p2p_dist(pc, p1)
-            self.circ_gen((pc, r), rubber=1)
+            coords = (pc, r)
+            self.circ_gen(coords, rubber=1)
         elif len(self.pt_stack) > 1:
             p1 = self.pt_stack.pop()
             pc = self.pt_stack.pop()
