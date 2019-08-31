@@ -2319,12 +2319,17 @@ class Draw(AppShell.AppShell):
             print("No more Redo steps available.")
 
     def save_delta(self):
-        """After a drawing change, put prev on undo stack."""
+        """After a drawing change, save deltas on undo stack."""
         print('save_delta called')
         if self.curr != self.prev:
-            print('prev pushed onto undo stack')
-            self.undo_stack.append(self.prev)
+            print('deltas being pushed onto undo stack')
+            plus = set(self.curr.values()) - set(self.prev.values())
+            minus = set(self.prev.values()) - set(self.curr.values())
+            delta = {'+': plus, '-': minus}
+            pprint.pprint(delta)
+            self.undo_stack.append(delta)
             self.prev = self.curr.copy()
+
 
     #=======================================================================
     # Event handling

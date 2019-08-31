@@ -19,6 +19,9 @@ class TX:
         self.type = 'tx'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -31,7 +34,7 @@ class TX:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.text, self.style, self.size, self.color]
+        return (self.coords, self.text, self.style, self.size, self.color)
 
 class CL:
     """Construction Line object initialized with a tuple of attributes.
@@ -45,6 +48,9 @@ class CL:
         self.type = 'cl'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -54,7 +60,7 @@ class CL:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.color]
+        return (self.coords, self.color)
 
 class CC:
     """Construction Circle object initialized with a tuple of attributes.
@@ -68,6 +74,9 @@ class CC:
         self.type = 'cc'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -77,7 +86,7 @@ class CC:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.color]
+        return (self.coords, self.color)
 
 class GL:
     """Geometry Line object initialized with a tuple of attributes.
@@ -91,6 +100,9 @@ class GL:
         self.type = 'gl'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -100,7 +112,7 @@ class GL:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.color]
+        return (self.coords, self.color)
 
 class GC:
     """Geometry Circle object initialized with a tuple of attributes.
@@ -114,6 +126,9 @@ class GC:
         self.type = 'gc'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -123,7 +138,7 @@ class GC:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.color]
+        return (self.coords, self.color)
 
 class GA:
     """Geometry Arc object initialized with a tuple of attributes.
@@ -137,6 +152,9 @@ class GA:
         self.type = 'ga'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -146,7 +164,7 @@ class GA:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.color]
+        return (self.coords, self.color)
 
 class DL:
     """Dimension Linear object initialized with a tuple of attributes.
@@ -160,6 +178,9 @@ class DL:
         self.type = 'dl'
         self.show = True
 
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
     def __eq__(self, other):
         return (self.__class__ == other.__class__ and
                 self.coords == other.coords and
@@ -169,7 +190,7 @@ class DL:
         return f"{self.type} object with coordinates {self.coords}"
 
     def get_attribs(self):
-        return [self.coords, self.color]
+        return (self.coords, self.color)
 
 if __name__ == "__main__":
     attribs = ((50,50), "this is some text", 'Verdana', 10, 'cyan',)
