@@ -814,6 +814,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Debug', 'command', 'Show Curr',
                                  label='Show Curr',
                                  command=lambda k='show_curr':self.dispatch(k))
+        self.menuBar.addmenuitem('Debug', 'command', 'Show Prev',
+                                 label='Show Prev',
+                                 command=lambda k='show_prev':self.dispatch(k))
         self.menuBar.addmenuitem('Debug', 'command', 'Show Undo',
                                  label='Show Undo',
                                  command=lambda k='show_undo':self.dispatch(k))
@@ -899,6 +902,10 @@ class Draw(AppShell.AppShell):
 
     def show_curr(self):
         pprint.pprint(self.curr)
+        self.end()
+
+    def show_prev(self):
+        pprint.pprint(self.prev)
         self.end()
 
     def show_undo(self):
@@ -2313,9 +2320,11 @@ class Draw(AppShell.AppShell):
 
     def save_delta(self):
         """After a drawing change, put prev on undo stack."""
+        print('save_delta called')
         if self.curr != self.prev:
+            print('prev pushed onto undo stack')
             self.undo_stack.append(self.prev)
-            self.prev = self.curr
+            self.prev = self.curr.copy()
 
     #=======================================================================
     # Event handling
