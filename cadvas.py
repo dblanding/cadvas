@@ -2234,16 +2234,17 @@ class Draw(AppShell.AppShell):
     In order to implement undo and redo, it is neccesary to detect whenever
     there is a change in self.curr. To do this, a copy of self.curr (named
     self.prev) is maintained. Whenever a CAD operation ends, the save_delta()
-    method is called. This method first compares the values in self.curr with
-    the values in self.prev. If they are not equal, the prev config is loaded
-    onto the undo_stack. The curr config is then copied to self.prev.
+    method is called. This method first compares self.curr with self.prev to
+    see if they are equal. If not, a set containing the values in self.curr is
+    compared with a set containing the values in self.prev. The difference is
+    loaded onto the undo_stack. The curr config is then copied to self.prev.
                              __________
                             |  Change  |
                             |_detected_|
                                  ||
                                  ||1
                                  \/          2
-     ____________            __________    prev    ______________
+     ____________            __________    diff    ______________
     | redo stack |          |   Curr   |    -->   |  Undo stack  |
     |____________|          |__________|          |______________|
                                  ||
@@ -2254,7 +2255,7 @@ class Draw(AppShell.AppShell):
                             |__________|
 
     1. difference detected between curr and prev.
-    2. prev config pushed onto undo_stack.
+    2. diff (delta) pushed onto undo_stack.
     3. self.prev overwritten by self.curr.
     
     
@@ -2298,38 +2299,60 @@ class Draw(AppShell.AppShell):
     ToDo: Figure out how best to clear the redo_stack automatically.
     """
 
+    def save_delta(self):
+        """After a drawing change, save deltas on undo stack."""
+        if self.curr != self.prev:
+            plus = set(self.curr.values()) - set(self.prev.values())
+            minus = set(self.prev.values()) - set(self.curr.values())
+            delta = {'+': plus, '-': minus}
+            self.undo_stack.append(delta)
+            self.prev = self.curr.copy()
+
     def undo(self):
-        """Pop data off undo_stack. Put curr on redo stack. Put undo in curr."""
+        """Pop data off undo_stack."""
         
         if self.undo_stack:
             undo_data = self.undo_stack.pop()
-            self.redo_stack.append(self.curr)
-            self.curr = undo_data
+            self.redo_stack.append(undo_data)
+            print(undo_data)
+            for item in undo_data['+']:
+                self.rem_draw(item)
+            for item in undo_data['-']:
+                self.add_draw(item)
         else:
             print("No more Undo steps available.")
 
     def redo(self):
-        """Pop data off redo_stack. Put curr on Undo stack. Put redo in curr."""
+        """Pop data off redo_stack."""
 
         if self.redo_stack:
             redo_data = self.redo_stack.pop()
-            self.undo_stack.append(self.curr)
-            self.curr = redo_data
+            self.undo_stack.append(redo_data)
+            print(redo_data)
+            for item in redo_data['+']:
+                self.add_draw(item)
+            for item in redo_data['-']:
+                self.rem_draw(item)
         else:
             print("No more Redo steps available.")
 
-    def save_delta(self):
-        """After a drawing change, save deltas on undo stack."""
-        print('save_delta called')
-        if self.curr != self.prev:
-            print('deltas being pushed onto undo stack')
-            plus = set(self.curr.values()) - set(self.prev.values())
-            minus = set(self.prev.values()) - set(self.curr.values())
-            delta = {'+': plus, '-': minus}
-            pprint.pprint(delta)
-            self.undo_stack.append(delta)
-            self.prev = self.curr.copy()
+    def add_draw(self, entity):
+        """Add entity to current drawing."""
 
+        if entity.type is 'tx':
+            handle = self.text_gen(entity)
+            self.curr[handle] = entity
+        elif entity.type is 'gl':
+            self.gline_gen(entity)
+
+    def rem_draw(self, entity):
+        """Remove entity from current drawing."""
+
+        kvlist = list(self.curr.items())
+        for k, v in kvlist:
+            if v == entity:
+                self.canvas.delete(k)
+                self.curr.pop(k)  # alternatively: del self.curr[k]
 
     #=======================================================================
     # Event handling
