@@ -33,6 +33,7 @@ import AppShell
 from   toolbarbutton import ToolBarButton
 import tkrpncalc
 import entities
+import pprint
 
 version = '0.4.0'
 date = 'July 2019'
@@ -466,6 +467,8 @@ class Draw(AppShell.AppShell):
     textsize = 10           # default text size
     textstyle = 'Calibri'   # default text style
     rubbercolor = 'yellow'  # color of (temporary) rubber elements
+    geomcolor = 'white'     # geometry color
+    constcolor = 'magenta'  # Construction color
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
                  'inches': 25.4,
@@ -636,8 +639,8 @@ class Draw(AppShell.AppShell):
             self.regen()
 
     def regen(self, event=None):
-        self.regen_all_cl()
-        self.regen_all_dims()
+        #self.regen_all_cl()
+        #self.regen_all_dims()
         self.regen_all_text()
 
     def set_units(self, units):
@@ -807,6 +810,13 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Delete', 'separator')
         self.menuBar.addmenuitem('Delete', 'command', 'Delete all',
                                  label='Delete All', command=self.del_all)
+        self.menuBar.addmenu('Debug', 'Debug')
+        self.menuBar.addmenuitem('Debug', 'command', 'Show Curr',
+                                 label='Show Curr',
+                                 command=lambda k='show_curr':self.dispatch(k))
+        self.menuBar.addmenuitem('Debug', 'command', 'Show Undo',
+                                 label='Show Undo',
+                                 command=lambda k='show_undo':self.dispatch(k))
         
 
     def createTools(self):
@@ -882,6 +892,19 @@ class Draw(AppShell.AppShell):
         self.createTools()
         self.canvas.move_can(60,420)    # Put 0,0 near lower left corner
 
+    #=======================================================================
+    # Debug Tools
+    #
+    #=======================================================================
+
+    def show_curr(self):
+        pprint.pprint(self.curr)
+        self.end()
+
+    def show_undo(self):
+        pprint.pprint(self.undo_stack)
+        self.end()
+        
     #=======================================================================
     # Construction
     # construction lines (clines) are "infinite" length lines
@@ -1346,10 +1369,11 @@ class Draw(AppShell.AppShell):
     #           a1 = end angle in degrees
     #=======================================================================
 
-    def line_gen(self, coords, color='white', tag='g', arrow=None):
+    def line_gen(self, gl, arrow=None, tag='g'):
         """Create line segment between two pts in engineering (mm) coords.
         Return item ID of line."""
         
+        coords, color = gl.get_attribs()
         p1, p2 = coords
         xa, ya = self.ep2cp(p1)
         xb, yb = self.ep2cp(p2)
@@ -1357,12 +1381,12 @@ class Draw(AppShell.AppShell):
                                        fill=color, tags=tag, arrow=arrow)
         return tkid
 
-    def gline_gen(self, coords):
+    def gline_gen(self, gl):
         """Create line segment between two pts in engineering (mm) coords.
-        Store coords in gl_dict."""
+        Store coords in self.curr."""
         
-        tkid = self.line_gen(coords)
-        self.gl_dict[tkid] = coords
+        tkid = self.line_gen(gl)
+        self.curr[tkid] = gl
         
     def line(self, p1=None):
         '''Create line segment between 2 points. Enable 'rubber line' mode'''
@@ -1394,7 +1418,10 @@ class Draw(AppShell.AppShell):
         elif len(self.pt_stack) > 1:
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
-            self.gline_gen((p1, p2))
+            coords = (p1, p2)
+            attribs = (coords, self.geomcolor)
+            gl = entities.GL(attribs)
+            self.gline_gen(gl)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
@@ -2115,25 +2142,9 @@ class Draw(AppShell.AppShell):
         if self.obj_stack:
             item_tuple = self.obj_stack.pop()
             for item in item_tuple:
-                if item in self.cl_dict.keys():
+                if item in self.curr.keys():
                     cline = self.cl_dict[item]
-                    self.cl_list.remove(cline)
-                    del self.cl_dict[item]
-                    self.canvas.delete(item)
-                elif item in self.cc_dict.keys():
-                    del self.cc_dict[item]
-                    self.canvas.delete(item)
-                elif item in self.gl_dict.keys():
-                    del self.gl_dict[item]
-                    self.canvas.delete(item)
-                elif item in self.gc_dict.keys():
-                    del self.gc_dict[item]
-                    self.canvas.delete(item)
-                elif item in self.ga_dict.keys():
-                    del self.ga_dict[item]
-                    self.canvas.delete(item)
-                elif item in self.tx_dict.keys():
-                    del self.tx_dict[item]
+                    del self.curr[item]
                     self.canvas.delete(item)
                 else:
                     tags = self.canvas.gettags(item)
@@ -2142,27 +2153,38 @@ class Draw(AppShell.AppShell):
                         dim_items = self.canvas.find_withtag(dgid)
                         for each in dim_items:
                             self.canvas.delete(each)
-                        del self.dl_dict[dgid]
+                        del self.curr[dgid]
              
     def del_all_c(self):
         '''Delete All construction.'''
-        self.cl_list = []
-        self.cl_dict.clear()
-        self.cc_dict.clear()
+        delete = [k for k, v in self.curr.items() if v.type is 'cl']
+        for k in delete:
+            del self.curr[k]
+        delete = [k for k, v in self.curr.items() if v.type is 'cc']
+        for k in delete:
+            del self.curr[k]
         for item in self.canvas.find_withtag('c'):
             self.canvas.delete(item)
              
     def del_all_g(self):
         '''Delete all geometry.'''
-        self.gl_dict.clear()
-        self.gc_dict.clear()
-        self.ga_dict.clear()
+        delete = [k for k, v in self.curr.items() if v.type is 'gl']
+        for k in delete:
+            del self.curr[k]
+        delete = [k for k, v in self.curr.items() if v.type is 'gc']
+        for k in delete:
+            del self.curr[k]
+        delete = [k for k, v in self.curr.items() if v.type is 'ga']
+        for k in delete:
+            del self.curr[k]
         for item in self.canvas.find_withtag('g'):
             self.canvas.delete(item)
 
     def del_all_d(self):
         '''Delete all dimensions.'''
-        self.dl_dict.clear()
+        delete = [k for k, v in self.curr.items() if v.type is 'dl']
+        for k in delete:
+            del self.curr[k]
         for item in self.canvas.find_withtag('d'):
             self.canvas.delete(item)
 
@@ -2177,8 +2199,8 @@ class Draw(AppShell.AppShell):
     def del_all(self):
         '''Delete all.'''
         self.curr.clear()
-        for item in self.canvas:
-            self.canvas.delete(item)
+        self.canvas.delete(ALL)
+        
 
     #=======================================================================
     # Undo / Redo
