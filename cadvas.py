@@ -2176,10 +2176,9 @@ class Draw(AppShell.AppShell):
 
     def del_all(self):
         '''Delete all.'''
-        self.del_all_c()
-        self.del_all_g()
-        self.del_all_d()
-        self.del_all_t()
+        self.curr.clear()
+        for item in self.canvas:
+            self.canvas.delete(item)
 
     #=======================================================================
     # Undo / Redo
