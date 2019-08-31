@@ -1491,6 +1491,27 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(self.rubber)
                 self.rubber = None
 
+    def gcirc_gen(self, gc, tag='g'):
+
+        ctr, rad = gc.coords
+        x, y = self.ep2cp(ctr)
+        r = self.canvas.w2c_dx(rad)
+        handle = self.canvas.create_oval(x-r, y-r, x+r, y+r,
+                                         outline=gc.color,
+                                         tags=tag)
+        self.curr[handle] = gc
+
+    def ccirc_gen(self, cc, tag='c'):
+
+        ctr, rad = cc.coords
+        x, y = self.ep2cp(ctr)
+        r = self.canvas.w2c_dx(rad)
+        handle = self.canvas.create_oval(x-r, y-r, x+r, y+r,
+                                         outline=cc.color,
+                                         tags=tag)
+        self.curr[handle] = cc
+        self.canvas.tag_lower(handle)
+
     def circ_gen(self, coords, rubber=0, constr=0):
         """Create circle at center pc, radius r in engineering (mm) coords.
         Handle rubber circles, construction, and geom circles."""
@@ -1507,25 +1528,20 @@ class Draw(AppShell.AppShell):
                 self.rubber = self.canvas.create_oval(x-r, y-r, x+r, y+r,
                                                       outline=color, tags=tag)
         else:
-            if constr:
-                color = self.constcolor
-                tag = 'c'
-            else:
-                color = self.geomcolor
-                tag = 'g'
-            tkid = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                           outline=color, tags=tag)
-            if tag == 'g':
-                self.gc_dict[tkid] = coords
-            elif tag == 'c':
-                self.cc_dict[tkid] = coords
-                self.canvas.tag_lower(tkid)
+            if constr:  # Constr circle
+                attribs = (coords, self.constrcolor)
+                cc = entities.CC(attribs)
+                self.ccirc_gen(cc)
+            else:  # geom circle
+                attribs = (coords, self.geomcolor)
+                gc = entities.GC(attribs)
+                self.gcirc_gen(gc)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
             
     def circ(self, p1=None, constr=0):
-        '''Generate a circle from center pnt and perimeter pnt or radius.'''
+        '''Create a circle from center pnt and perimeter pnt or radius.'''
         
         finish = 0
         if not self.pt_stack:
@@ -2347,6 +2363,8 @@ class Draw(AppShell.AppShell):
             self.curr[handle] = entity
         elif entity.type is 'gl':
             self.gline_gen(entity)
+        elif entity.type is 'gc':
+            self.gcirc_gen(entity)
 
     def rem_draw(self, entity):
         """Remove entity from current drawing."""
