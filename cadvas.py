@@ -449,28 +449,15 @@ class Draw(AppShell.AppShell):
     op_stack = []
     text_entry_enable = 0
     text = ''
+    curr = {}
+    prev = {}
     allow_list = 0          # enable/disable item selection in list mode
     sel_mode = ''           # selection mode for screen picks
     float_stack = []        # float values (unitless)
     pt_stack = []           # points, in ECS (mm) units
     obj_stack = []          # canvas items picked from the screen
     sel_box_crnr = None     # first corner of selection box, if any
-    cl_list = []            # all construction lines
-    cl_dict = {}            # construction lines that fit on canvas
-    cc_dict = {}            # all construction circles
-    gl_dict = {}            # all geometry lines
-    gc_dict = {}            # all geometry circles
-    ga_dict = {}            # all geometry arcs
-    dl_dict = {}            # all linear dimensions
-    tx_dict = {}            # all text
-    cl_tupl_prev = ()       # all construction lines (before last op)
-    cc_tupl_prev = ()       # all construction circles (before last op)
-    gl_tupl_prev = ()       # all geometry lines (before last op)
-    gc_tupl_prev = ()       # all geometry circles (before last op)
-    ga_tupl_prev = ()       # all geometry arcs (before last op)
-    dl_tupl_prev = ()       # all linear dimensions (before last op)
-    tx_tupl_prev = ()       # all text (before last op)
-    undo_stack = []         # list of dicts of drawing element changes
+    undo_stack = []         # list of dicts of drawing elements
     redo_stack = []         # list of dicts popped off undo_stack
     filename = None         # name of file currently loaded (or saved as)
     dimgap = 10             # extension line gap (in canvas units) 
@@ -761,8 +748,6 @@ class Draw(AppShell.AppShell):
                                  label='Undo', command=self.undo)
         self.menuBar.addmenuitem('Edit', 'command', 'Redo',
                                  label='Redo', command=self.redo)
-        self.menuBar.addmenuitem('Edit', 'command', 'Clear Redo',
-                                 label='Clr Redo', command=self.clear_redo)
         self.menuBar.addmenu('View', 'View commands')
         self.menuBar.addmenuitem('View', 'command', 'Fit geometry to screen',
                                  label='Fit', command=self.view_fit)
@@ -2044,13 +2029,13 @@ class Draw(AppShell.AppShell):
         This needs to be done after zoom because text size is defined
         in terms of canvas pixels and doesn't change size with zoom."""
         
-        tx_list = list(self.tx_dict.values())
+        tx_list = [tx for tx in self.curr.values() if tx.type == 'tx']
         attribs_list = [tx.get_attribs() for tx in tx_list]
         self.del_all_t()
         for attribs in attribs_list:
             tx = entities.TX(attribs)
             handle = self.text_gen(tx)
-            self.tx_dict[handle] = tx
+            self.curr[handle] = tx
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
@@ -2072,7 +2057,7 @@ class Draw(AppShell.AppShell):
                        self.textsize, self.textcolor)
             tx = entities.TX(attribs)
             handle = self.text_gen(tx)
-            self.tx_dict[handle] = tx
+            self.curr[handle] = tx
             self.text = None
             if self.rubber:
                 self.canvas.delete(self.rubber)
@@ -2088,8 +2073,8 @@ class Draw(AppShell.AppShell):
         elif not self.pt_stack:
             for item in self.obj_stack:
                 for handle in item:
-                    if handle in self.tx_dict:
-                        rubber_tx = self.tx_dict[handle]
+                    if handle in self.curr:
+                        rubber_tx = self.curr[handle]
                     if p:  # mouse coordinates supplied by Zooming
                         x, y = p
                         u, v = self.cp2ep((x, y))
@@ -2103,15 +2088,15 @@ class Draw(AppShell.AppShell):
         elif self.pt_stack:
             newpoint = self.pt_stack.pop()
             handle = self.obj_stack.pop()[0]
-            if handle in self.tx_dict:
-                tx = self.tx_dict[handle]
+            if handle in self.curr:
+                tx = self.curr[handle]
                 attribs = tx.get_attribs()
                 attribs[0] = newpoint
                 attribs = tuple(attribs)
                 new_tx = entities.TX(attribs)
                 new_handle = self.text_gen(new_tx)
-                self.tx_dict[new_handle] = new_tx
-                del self.tx_dict[handle]
+                self.curr[new_handle] = new_tx
+                del self.curr[handle]
                 self.canvas.delete(handle)
             if self.rubber:
                 self.canvas.delete(self.rubber)
@@ -2183,7 +2168,9 @@ class Draw(AppShell.AppShell):
 
     def del_all_t(self):
         '''Delete all text.'''
-        self.tx_dict.clear()
+        delete = [k for k, v in self.curr.items() if v.type is 'tx']
+        for k in delete:
+            del self.curr[k]
         for item in self.canvas.find_withtag('t'):
             self.canvas.delete(item)
 
@@ -2288,8 +2275,8 @@ class Draw(AppShell.AppShell):
         
         if self.undo_stack:
             undo_data = self.undo_stack.pop()
-            self.redo_stack.append(self.get_curr())
-            self.put_curr(undo_data)
+            self.redo_stack.append(self.curr)
+            self.curr = undo_data
         else:
             print("No more Undo steps available.")
 
@@ -2298,97 +2285,16 @@ class Draw(AppShell.AppShell):
 
         if self.redo_stack:
             redo_data = self.redo_stack.pop()
-            self.undo_stack.append(self.get_curr())
-            self.put_curr(redo_data)
+            self.undo_stack.append(self.curr)
+            self.curr = redo_data
         else:
             print("No more Redo steps available.")
 
     def save_delta(self):
         """After a drawing change, put prev on undo stack."""
-        print('Running save_delta')
-        curr = self.get_curr()
-        prev = self.get_prev()
-        if curr != prev:
-            print('curr not equal to prev')
-            self.undo_stack.append(prev)
-            self.put_prev(curr)
-
-    def get_prev(self):
-        """Return drawdict of previous configuration."""
-
-        keylist = ['cl', 'cc', 'gl', 'gc', 'ga', 'dl', 'tx']
-        datalist = [self.cl_tupl_prev, self.cc_tupl_prev,
-                    self.gl_tupl_prev, self.gc_tupl_prev,
-                    self.ga_tupl_prev, self.dl_tupl_prev,
-                    self.tx_tupl_prev]
-        return dict(zip(keylist, datalist))
-
-    def put_prev(self, dd):
-        """Save dd to prev conifg."""
-
-        self.cl_tupl_prev = dd['cl']
-        self.cc_tupl_prev = dd['cc']
-        self.gl_tupl_prev = dd['gl']
-        self.gc_tupl_prev = dd['gc']
-        self.ga_tupl_prev = dd['ga']
-        self.dl_tupl_prev = dd['dl']
-        self.tx_tupl_prev = dd['tx']
-        
-
-    def get_curr(self):
-        """Return drawdict of current configuration."""
-
-        keylist = ['cl', 'cc', 'gl', 'gc', 'ga', 'dl', 'tx']
-        datalist = [tuple(self.cl_list), tuple(self.cc_dict.values()),
-                    tuple(self.gl_dict.values()), tuple(self.gc_dict.values()),
-                    tuple(self.ga_dict.values()), tuple(self.dl_dict.values()),
-                    tuple(self.tx_dict.values())]
-        return dict(zip(keylist, datalist))
-
-    def put_curr(self, dd):
-        """Regenerate current config based on dd."""
-
-        self.cl_list = list(dd['cl'])  # This can't be a tuple. Must be list.
-        self.regen_all_cl()
-
-        for item in self.cc_dict.keys():
-            self.canvas.delete(item)
-        self.cc_dict.clear()
-        for coords in dd['cc']:
-            self.circ_gen(coords, constr=1)
-
-        for item in self.gl_dict.keys():
-            self.canvas.delete(item)
-        self.gl_dict.clear()
-        for coords in dd['gl']:
-            self.gline_gen(coords)
-
-        for item in self.gc_dict.keys():
-            self.canvas.delete(item)
-        self.gc_dict.clear()
-        for coords in dd['gc']:
-            self.circ_gen(coords)
-
-        for item in self.ga_dict.keys():
-            self.canvas.delete(item)
-        self.ga_dict.clear()
-        for coords in dd['ga']:
-            self.arc_gen(coords)
-
-        for item in self.dl_dict.keys():
-            self.canvas.delete(item)
-        self.dl_dict.clear()
-        for coords in dd['dl']:
-            self.dim_gen(coords)
-
-        for item in self.tx_dict.keys():
-            self.canvas.delete(item)
-        self.tx_dict.clear()
-        for coords in dd['tx']:
-            self.text_gen(coords)
-
-    def clear_redo(self):  # clear redo stack
-        self.redo_stack.clear()
+        if self.curr != self.prev:
+            self.undo_stack.append(self.prev)
+            self.prev = self.curr
 
     #=======================================================================
     # Event handling
