@@ -2022,14 +2022,14 @@ class Draw(AppShell.AppShell):
     # style, size, color define the font.
     #=======================================================================
 
-    def text_gen(self, txt_obj, tag='t'):
-        """Generate text, return handle."""
+    def text_gen(self, tx, tag='t'):
+        """Accept TX object and generate text, return handle."""
 
-        x, y = txt_obj.coords
-        text = txt_obj.text
-        style = txt_obj.style
-        size = txt_obj.size
-        color =txt_obj. color
+        x, y = tx.coords
+        text = tx.text
+        style = tx.style
+        size = tx.size
+        color =tx. color
         u, v = self.ep2cp((x, y))
         zoom_scale = self.canvas.scl.x
         zoomed_font_size = int(size * zoom_scale)
@@ -2044,11 +2044,11 @@ class Draw(AppShell.AppShell):
         This needs to be done after zoom because text size is defined
         in terms of canvas pixels and doesn't change size with zoom."""
         
-        tx_obj_list = list(self.tx_dict.values())
-        attribs_list = [tx_obj.get_attribs() for tx_obj in tx_obj_list]
+        tx_list = list(self.tx_dict.values())
+        attribs_list = [tx.get_attribs() for tx in tx_list]
         self.del_all_t()
         for attribs in attribs_list:
-            tx = entities.TxObject(attribs)
+            tx = entities.TX(attribs)
             handle = self.text_gen(tx)
             self.tx_dict[handle] = tx
 
@@ -2070,7 +2070,7 @@ class Draw(AppShell.AppShell):
             p = self.pt_stack.pop()
             attribs = (p, self.text, self.textstyle,
                        self.textsize, self.textcolor)
-            tx = entities.TxObject(attribs)
+            tx = entities.TX(attribs)
             handle = self.text_gen(tx)
             self.tx_dict[handle] = tx
             self.text = None
@@ -2108,7 +2108,7 @@ class Draw(AppShell.AppShell):
                 attribs = tx.get_attribs()
                 attribs[0] = newpoint
                 attribs = tuple(attribs)
-                new_tx = entities.TxObject(attribs)
+                new_tx = entities.TX(attribs)
                 new_handle = self.text_gen(new_tx)
                 self.tx_dict[new_handle] = new_tx
                 del self.tx_dict[handle]
@@ -2199,8 +2199,10 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     """
-    Drawing elements are stored in dictionaries, grouped by 'type', with
-    types represented by the following keys:
+    When drawing elements are generated and displayed, their parameters are
+    stored in objects that are specific to their 'type'. The objects which
+    encapsulate them each have a .type attribute mirroring the type of the
+    element being encapsulated. The types are as follows:
     
     'cl'    construction line
     'cc'    construction circle
@@ -2209,33 +2211,24 @@ class Draw(AppShell.AppShell):
     'ga'    geometry arc
     'dl'    linear dimension
     'tx'    text
-    
-    As the drawing configuration changes, these dictionaries will change.
-    In order to be able to undo and redo changes, it is neccesary to
-    keep track of both the the current configuration (curr) and the
-    configuration just previous (prev). The curr configuration
-    is stored in vars named like: 'self.cc_dict' in which the key is
-    the ID number assigned by the Tk canvas and the value is a list
-    containing the coordinates of the drawing element. The prev
-    configuration is stored in vars named like: self.cc_tupl_prev
-    containing the coordinates of all the drawing elements of that
-    type (in tuple format). Typically, the only difference between
-    (curr) and (prev) might be just one or two types of drawing
-    element. For example, if the most recent CAD operation added a slot,
-    then only the dicts with keys 'gl' and 'ga' will change. 
 
-    Any time the drawing changes (as a result of an operation that creates,
-    modifies or deletes drawing elements), the save_delta() method will be
-    called. This method first appends a dictionary corresponding with the
-    prev config onto the undo_stack. It then updates the prev config to
-    the curr config.
+    Information about all the elements currently in the drawing is kept in a
+    dictionary named self.curr, whose values are the objects encapsulating each
+    element and whose keys are the canvas generated handles associated with each
+    element.
+    In order to implement undo and redo, it is neccesary to detect whenever
+    there is a change in self.curr. To do this, a copy of self.curr (named
+    self.prev) is maintained. Whenever a CAD operation ends, the save_delta()
+    method is called. This method first compares the values in self.curr with
+    the values in self.prev. If they are not equal, the prev config is loaded
+    onto the undo_stack. The curr config is then copied to self.prev.
                              __________
-                            | C/M/D op |
-                            |__________|
+                            |  Change  |
+                            |_detected_|
                                  ||
                                  ||1
                                  \/          2
-     ____________            __________     dd     ______________
+     ____________            __________    prev    ______________
     | redo stack |          |   Curr   |    -->   |  Undo stack  |
     |____________|          |__________|          |______________|
                                  ||
@@ -2245,9 +2238,9 @@ class Draw(AppShell.AppShell):
                             |   Prev   |
                             |__________|
 
-    1. Drawing elements are Created / Modified / Deleted.
-    2. drawingdict of curr config append onto undo_stack.
-    3. prev config overwritten by curr config.
+    1. difference detected between curr and prev.
+    2. prev config pushed onto undo_stack.
+    3. self.prev overwritten by self.curr.
     
     
     The undo & redo buttons work as shown in the diagram below.
