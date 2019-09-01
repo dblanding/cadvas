@@ -1883,14 +1883,16 @@ class Draw(AppShell.AppShell):
                     del self.curr[handle]
 
     def rotate(self, p=None):
-        """Move (or copy) selected geometry item(s) by rotating about a point. 
-        To copy items, enter number of copies. Otherwise, item(s) will be moved (not copied)."""
-        
+        """Move (or copy) selected geometry item(s) by rotating about a point.
+
+        To copy items, enter number of copies. Otherwise, item(s) will be moved
+        (not copied)."""
         if not self.obj_stack and not self.pt_stack and not self.float_stack:
             self.repeat = 0   # No copies. "move" mode is intended.
             self.set_sel_mode('items')
             self.allow_list = 1
-            self.updateMessageBar('Specify number of copies or select geometry item(s) to move')
+            msg = 'Specify number of copies or select geometry item(s) to move'
+            self.updateMessageBar(msg)
         elif not self.obj_stack and not self.pt_stack:
             self.updateMessageBar('Select geometry item(s) to move')
         elif self.obj_stack and not self.pt_stack:
@@ -1903,49 +1905,38 @@ class Draw(AppShell.AppShell):
             self.updateMessageBar('Specify angle of rotation in degrees')
         elif self.obj_stack and self.pt_stack and self.float_stack:
             ctr = self.pt_stack.pop()
-            items = self.obj_stack.pop()
+            handles = self.obj_stack.pop()
             A = self.float_stack.pop()
-            if self.repeat:  # copy (repeat) times
-                for item in items:
-                    if item in self.gl_dict.keys():
-                        e = self.gl_dict[item]
-                        for i in range(self.repeat):
-                            e = (rotate_pt(e[0], A, ctr), rotate_pt(e[1], A, ctr))
-                            self.gline_gen(e)
-                    elif item in self.gc_dict.keys():
-                        e = self.gc_dict[item]
-                        for x in range(self.repeat):
-                            e = (rotate_pt(e[0], A, ctr), e[1])
-                            self.circ_gen(e)
-                    elif item in self.ga_dict.keys():
-                        e = self.ga_dict[item]
-                        for x in range(self.repeat):
-                            e = (rotate_pt(e[0], A, ctr), e[1], e[2]+A, e[3]+A)
-                            self.arc_gen(e)
-                    else:
-                        print('Only geometry type items can be moved with this command.')
-            else:   # move
-                for item in items:
-                    if item in self.gl_dict.keys():
-                        e = self.gl_dict[item]
+            items = [self.curr[handle] for handle in handles]
+            delete_original = False
+            if not self.repeat:  # move, (not copy)
+                delete_original = True
+                repeat = 1
+            for item in items:
+                if item.type is 'gl':
+                    e, _ = item.get_attribs()
+                    for x in range(self.repeat):
                         e = (rotate_pt(e[0], A, ctr), rotate_pt(e[1], A, ctr))
-                        self.gline_gen(e)
-                        del self.gl_dict[item]
-                        self.canvas.delete(item)
-                    elif item in self.gc_dict.keys():
-                        e = self.gc_dict[item]
+                        gl = entities.GL((e, self.geomcolor))
+                        self.gline_gen(gl)
+                elif item.type is 'gc':
+                    e, _ = item.get_attribs()
+                    for x in range(self.repeat):
                         e = (rotate_pt(e[0], A, ctr), e[1])
-                        self.circ_gen(e)
-                        del self.gc_dict[item]
-                        self.canvas.delete(item)
-                    elif item in self.ga_dict.keys():
-                        e = self.ga_dict[item]
+                        gc = entities.GC((e, self.geomcolor))
+                        self.gcirc_gen(gc)
+                elif itemtype is 'ga':
+                    e, _ = item.get_attribs()
+                    for x in range(self.repeat):
                         e = (rotate_pt(e[0], A, ctr), e[1], e[2]+A, e[3]+A)
-                        self.arc_gen(e)
-                        del self.ga_dict[item]
-                        self.canvas.delete(item)
-                    else:
-                        print('Only geometry type items can be moved with this command.')
+                        ga = entities.GA((e, self.geomcolor))
+                        self.garc_gen(ga)
+                else:
+                    print('Only geometry type items can be moved with this command.')
+            if delete_original:
+                for handle in handles:
+                    self.canvas.delete(handle)
+                    del self.curr[handle]
                 
     #=======================================================================
     # Dimensions
