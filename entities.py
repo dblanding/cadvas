@@ -5,6 +5,9 @@ GP Geometry Polygon
 GO Geometry Oval
 GE Geometry Ellipse
 GS Geometry Slot
+
+DA Dimension Angular
+DR Dimension Radial
 """
 
 
