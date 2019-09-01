@@ -2143,7 +2143,7 @@ class Draw(AppShell.AppShell):
             handle = self.obj_stack.pop()[0]
             if handle in self.curr:
                 tx = self.curr[handle]
-                attribs = tx.get_attribs()
+                attribs = list(tx.get_attribs())
                 attribs[0] = newpoint
                 attribs = tuple(attribs)
                 new_tx = entities.TX(attribs)
@@ -2169,7 +2169,6 @@ class Draw(AppShell.AppShell):
             item_tuple = self.obj_stack.pop()
             for item in item_tuple:
                 if item in self.curr.keys():
-                    cline = self.cl_dict[item]
                     del self.curr[item]
                     self.canvas.delete(item)
                 else:
@@ -2233,10 +2232,10 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     """
-    When drawing elements are generated and displayed, their parameters are
+    When drawing entities are generated and displayed, their parameters are
     stored in objects that are specific to their 'type'. The objects which
     encapsulate them each have a .type attribute mirroring the type of the
-    element being encapsulated. The types are as follows:
+    entity being encapsulated. The types are as follows:
     
     'cl'    construction line
     'cc'    construction circle
@@ -2246,10 +2245,10 @@ class Draw(AppShell.AppShell):
     'dl'    linear dimension
     'tx'    text
 
-    Information about all the elements currently in the drawing is kept in a
+    Information about all the entities currently in the drawing is kept in a
     dictionary named self.curr, whose values are the objects encapsulating each
-    element and whose keys are the canvas generated handles associated with each
-    element.
+    entity and whose keys are the canvas generated handles associated with each
+    entity.
     In order to implement undo and redo, it is neccesary to detect whenever
     there is a change in self.curr. To do this, a copy of self.curr (named
     self.prev) is maintained. Whenever a CAD operation ends, the save_delta()
@@ -2291,7 +2290,7 @@ class Draw(AppShell.AppShell):
 
     For example, when the Undo button is clicked:
     1. undo_data is popped off the undo_stack.
-    2. curr config goes onto the redo_stack.
+    2. undo data is pushed onto the redo_stack.
     3. curr is updated with undo_data.
 
 
@@ -2306,20 +2305,22 @@ class Draw(AppShell.AppShell):
 
     Similarly, if the Redo button is clicked:
     1. redo_data is popped off the redo_stack.
-    2. curr config goes onto the undo_stack.
+    2. redo data is pushed onto the undo_stack.
     3. curr is updated with redo_data.
 
     Typically, after clicking undo / redo buttons one or more times,
-    the user will resume running C/M/D operations. Once this happens,
-    the data on the redo stack will no longer be relevant and needs
-    to be discarded. For now, there is a button under the edit menu
-    that allows the user to manually clear the redo stack.
+    the user will resume running operations that create, modify or
+    delete CAD data. Once CMD operations resume, the data on the redo
+    stack will no longer be relevant and needs to be discarded.
+    For now, there is a button under the edit menu that allows the user
+    to manually clear the redo stack.
 
     ToDo: Figure out how best to clear the redo_stack automatically.
     """
 
     def save_delta(self):
         """After a drawing change, save deltas on undo stack."""
+        
         if self.curr != self.prev:
             plus = set(self.curr.values()) - set(self.prev.values())
             minus = set(self.prev.values()) - set(self.curr.values())
@@ -2328,12 +2329,11 @@ class Draw(AppShell.AppShell):
             self.prev = self.curr.copy()
 
     def undo(self):
-        """Pop data off undo_stack."""
+        """Pop data off undo, push onto redo, and update curr."""
         
         if self.undo_stack:
             undo_data = self.undo_stack.pop()
             self.redo_stack.append(undo_data)
-            print(undo_data)
             for item in undo_data['+']:
                 self.rem_draw(item)
             for item in undo_data['-']:
@@ -2342,12 +2342,11 @@ class Draw(AppShell.AppShell):
             print("No more Undo steps available.")
 
     def redo(self):
-        """Pop data off redo_stack."""
+        """Pop data off redo, push onto undo, and update curr."""
 
         if self.redo_stack:
             redo_data = self.redo_stack.pop()
             self.undo_stack.append(redo_data)
-            print(redo_data)
             for item in redo_data['+']:
                 self.add_draw(item)
             for item in redo_data['-']:
