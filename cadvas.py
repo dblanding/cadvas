@@ -954,6 +954,17 @@ class Draw(AppShell.AppShell):
                 if add2list:    # If regen, we don't want to add to list
                     self.cl_list.append(cline)
 
+    def ccirc_gen(self, cc, tag='c'):
+
+        ctr, rad = cc.coords
+        x, y = self.ep2cp(ctr)
+        r = self.canvas.w2c_dx(rad)
+        handle = self.canvas.create_oval(x-r, y-r, x+r, y+r,
+                                         outline=cc.color,
+                                         tags=tag)
+        self.curr[handle] = cc
+        self.canvas.tag_lower(handle)
+
     def regen_all_cl(self, event=None):
         """Delete existing clines, clear cl_dict, and regenerate all clines
         in cl_list. This needs to be done after pan or zoom because the
@@ -1368,16 +1379,19 @@ class Draw(AppShell.AppShell):
 
     #=======================================================================
     # Geometry
+    # geometry line parameters are stored in GL objects.
     # geometry lines are finite length segments between 2 pts: p1, p2
     # lines are defined by coordinates:         (p1, p2)
     #
-    # circles are defined by coordinates:       (pc, r)
-    #
-    # arcs are defined by coordinates:          (pc, r, a0, a1)
-    # where:    a0 = start angle in degrees
-    #           a1 = end angle in degrees
     #=======================================================================
 
+    def gline_gen(self, gl):
+        """Create line segment between two pts in engineering (mm) coords.
+        Store coords in self.curr."""
+        
+        tkid = self.line_gen(gl)
+        self.curr[tkid] = gl
+        
     def line_gen(self, gl, arrow=None, tag='g'):
         """Create line segment between two pts in engineering (mm) coords.
         Return item ID of line."""
@@ -1390,13 +1404,6 @@ class Draw(AppShell.AppShell):
                                        fill=color, tags=tag, arrow=arrow)
         return tkid
 
-    def gline_gen(self, gl):
-        """Create line segment between two pts in engineering (mm) coords.
-        Store coords in self.curr."""
-        
-        tkid = self.line_gen(gl)
-        self.curr[tkid] = gl
-        
     def line(self, p1=None):
         '''Create line segment between 2 points. Enable 'rubber line' mode'''
         
@@ -1493,6 +1500,11 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(self.rubber)
                 self.rubber = None
 
+    #=======================================================================
+    # geometry circle parameters are stored in GC objects.
+    # circles are defined by coordinates:       (pc, r)
+    #=======================================================================
+
     def gcirc_gen(self, gc, tag='g'):
 
         ctr, rad = gc.coords
@@ -1502,17 +1514,6 @@ class Draw(AppShell.AppShell):
                                          outline=gc.color,
                                          tags=tag)
         self.curr[handle] = gc
-
-    def ccirc_gen(self, cc, tag='c'):
-
-        ctr, rad = cc.coords
-        x, y = self.ep2cp(ctr)
-        r = self.canvas.w2c_dx(rad)
-        handle = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                         outline=cc.color,
-                                         tags=tag)
-        self.curr[handle] = cc
-        self.canvas.tag_lower(handle)
 
     def circ_gen(self, coords, rubber=0, constr=0):
         """Create circle at center pc, radius r in engineering (mm) coords.
@@ -1528,7 +1529,8 @@ class Draw(AppShell.AppShell):
                 self.canvas.coords(self.rubber, x-r, y-r, x+r, y+r)
             else:
                 self.rubber = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                                      outline=color, tags=tag)
+                                                      outline=color,
+                                                      tags=tag)
         else:
             if constr:  # Constr circle
                 attribs = (coords, self.constrcolor)
@@ -1567,6 +1569,49 @@ class Draw(AppShell.AppShell):
         if finish:
             self.circ_gen((pc, r), constr=constr)
 
+    #=======================================================================
+    # geometry arc parameters are stored in GA objects
+    # arcs are defined by coordinates:  (pc, r, a0, a1)
+    # where:    pc = (x, y) coords of center point
+    #           r = radius
+    #           a0 = start angle in degrees
+    #           a1 = end angle in degrees
+    #=======================================================================
+
+    def garc_gen(self, ga, tag='g'):
+        """Create arc from coords (in ECS)
+
+        pc  = arc center pt
+        rad = radius of arc center in mm
+        a0  = start angle in degrees measured CCW from 3 o'clock position
+        a1  = end angle in degrees measured CCW from 3 o'clock position
+        """
+        coords, color = ga.get_attribs()
+        pc, rad, a0, a1 = coords
+        ext = a1-a0
+        if ext<0:
+            ext += 360
+        x, y = self.ep2cp(pc)
+        r = self.canvas.w2c_dx(rad)
+        x1 = x-r
+        y1 = y-r
+        x2 = x+r
+        y2 = y+r
+        if tag is 'r':
+            if self.rubber:
+                self.canvas.coords(self.rubber, x1, y1, x2, y2,)
+                self.canvas.itemconfig(self.rubber, start=a0, extent=ext)
+            else:
+                self.rubber = self.canvas.create_arc(x1, y1, x2, y2,
+                                                     start=a0, extent=ext,
+                                                     style='arc', tags=tag,
+                                                     outline=color)
+        else:
+            handle = self.canvas.create_arc(x1, y1, x2, y2,
+                                            start=a0, extent=ext, style='arc',
+                                            outline=color, tags=tag)
+            self.curr[handle] = ga
+
     def arcc2p(self, p2=None):
         """Create an arc from center pt, start pt and end pt."""
         
@@ -1583,8 +1628,10 @@ class Draw(AppShell.AppShell):
                 r = p2p_dist(p0, p1)
                 ang1 = p2p_angle(p0, p1)
                 ang2 = p2p_angle(p0, p2)
-                self.arc_gen((p0, r, ang1, ang2),
-                             color=self.rubbercolor, tag='r')
+                coords = (p0, r, ang1, ang2)
+                attribs = (coords, self.rubbercolor)
+                ga = entities.GA(attribs)
+                self.garc_gen(ga, tag='r')
         elif len(self.pt_stack) == 3:
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
@@ -1592,7 +1639,10 @@ class Draw(AppShell.AppShell):
             r = p2p_dist(p0, p1)
             ang1 = p2p_angle(p0, p1)
             ang2 = p2p_angle(p0, p2)
-            self.arc_gen((p0, r, ang1, ang2))
+            coords = (p0, r, ang1, ang2)
+            attribs = (coords, self.geomcolor)
+            ga = entities.GA(attribs)
+            self.garc_gen(ga)
 
     def arc3p(self, p3=None):
         """Create an arc from start pt, end pt, and 3rd pt on the arc."""
@@ -1614,8 +1664,10 @@ class Draw(AppShell.AppShell):
                     ang2 = p2p_angle(pc, p2)
                     if not pt_on_RHS_p(p3, p1, p2):
                         ang2, ang1 = ang1, ang2
-                    self.arc_gen((pc, r, ang1, ang2),
-                                 color=self.rubbercolor, tag='r')
+                    coords = (pc, r, ang1, ang2)
+                    attribs = (coords, self.rubbercolor)
+                    ga = entities.GA(attribs)
+                    self.garc_gen(ga, tag='r')
         elif len(self.pt_stack) == 3:
             p3 = self.pt_stack.pop()
             p2 = self.pt_stack.pop()
@@ -1625,43 +1677,13 @@ class Draw(AppShell.AppShell):
             ang2 = p2p_angle(pc, p2)
             if not pt_on_RHS_p(p3, p1, p2):
                 ang2, ang1 = ang1, ang2
-            self.arc_gen((pc, r, ang1, ang2))
+            coords = (pc, r, ang1, ang2)
+            attribs = (coords, self.geomcolor)
+            ga = entities.GA(attribs)
+            self.garc_gen(ga)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None 
-
-    def arc_gen(self, coords, color='white', tag='g'):
-        """Create arc from coords (in ECS):
-        pc  = arc center pt
-        rad = radius of arc center in mm
-        a0  = start angle in degrees measured CCW from 3 o'clock position
-        a1  = end angle in degrees measured CCW from 3 o'clock position
-        """
-        
-        pc, rad, a0, a1 = coords
-        ext = a1-a0
-        if ext<0:
-            ext += 360
-        x, y = self.ep2cp(pc)
-        r = self.canvas.w2c_dx(rad)
-        x1 = x-r
-        y1 = y-r
-        x2 = x+r
-        y2 = y+r
-        if tag == 'r':
-            if self.rubber:
-                self.canvas.coords(self.rubber, x1, y1, x2, y2,)
-                self.canvas.itemconfig(self.rubber, start=a0, extent=ext)
-            else:
-                self.rubber = self.canvas.create_arc(x1, y1, x2, y2,
-                                                     start=a0, extent=ext,
-                                                     style='arc', tags=tag,
-                                                     outline=color)
-        else:
-            tkid = self.canvas.create_arc(x1, y1, x2, y2,
-                                          start=a0, extent=ext, style='arc',
-                                          outline=color, tags=tag)
-            self.ga_dict[tkid] = coords
 
     def slot(self, p1=None):
         if not self.pt_stack:
@@ -1690,8 +1712,8 @@ class Draw(AppShell.AppShell):
             p2b = intersection(paraline2, crossline2)
             self.pt_stack.extend([p2a, p2b, p2e])
             self.arc3p()
-            self.gline_gen((p1a, p2a))
-            self.gline_gen((p1b, p2b))
+            self.gline_gen(entities.GL(((p1a, p2a), self.geomcolor)))
+            self.gline_gen(entities.GL(((p1b, p2b), self.geomcolor)))
 
     #=======================================================================
     # Modify geometry
@@ -2056,9 +2078,9 @@ class Draw(AppShell.AppShell):
 
     #=======================================================================
     # Text
-    # Text parameters are stored as attributes of a TxObject.
+    # Text parameters are stored as attributes of a TX object.
     # attribs = (x,y), text, style, size, color
-    # where x, y are the coordinates of the center of the text.
+    # where (x, y) are the coordinates of the center of the text.
     # style, size, color define the font.
     #=======================================================================
 
@@ -2366,6 +2388,9 @@ class Draw(AppShell.AppShell):
             self.gline_gen(entity)
         elif entity.type is 'gc':
             self.gcirc_gen(entity)
+        elif entity.type is 'ga':
+            self.garc_gen(entity)
+        
 
     def rem_draw(self, entity):
         """Remove entity from current drawing."""
