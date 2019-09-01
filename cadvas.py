@@ -1761,18 +1761,20 @@ class Draw(AppShell.AppShell):
                         'g' in self.canvas.gettags(item)):
                     print('Incorrect types of items picked for join')
                     return
-            line1 = self.gl_dict[item1]
-            line2 = self.gl_dict[item2]
-            pts = find_common_pt(line1, line2)
+            gl1 = self.curr[item1]
+            gl2 = self.curr[item2]
+            coords1, clr = gl1.get_attribs()
+            coords2, clr = gl2.get_attribs()
+            pts = find_common_pt(coords1, coords2)
             if pts:
                 cp, ep1, ep2 = pts
             else:
                 print('No common pt found')
                 return
             for item in (item1, item2):
-                del self.gl_dict[item]
+                del self.curr[item]
                 self.canvas.delete(item)
-            self.gline_gen((ep1, ep2))
+            self.gline_gen(entities.GL(((ep1, ep2), self.geomcolor)))
 
     def modify_line_coords(self, item, coords):
         """Modify the coordinates of a line segment to new
