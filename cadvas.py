@@ -1732,19 +1732,18 @@ class Draw(AppShell.AppShell):
             self.updateMessageBar(message)
         else:
             # When picking a geometry line that overlays a
-            # construction line, need to throw out the c-line
+            # construction line, need to ignore the c-line
             item_tuple = self.obj_stack.pop()
             for item in item_tuple:
-                if item in self.gl_dict.keys():
+                entity = self.curr[item]
+                if entity.type is 'gl':
                     line = item
-                    # print("found geometry line")
-                else:
-                    # print("found something else")
-                    pass
-            p0 = self.pt_stack.pop()
-            p1, p2 = self.gl_dict[line]
-            self.modify_line_coords(line, (p0, p2))
-            self.gline_gen((p0, p1))
+                    p0 = self.pt_stack.pop()
+                    (p1, p2), clr = self.curr[line].get_attribs()
+                    del self.curr[line]
+                    self.canvas.delete(line)
+                    self.gline_gen(entities.GL(((p0, p1), self.geomcolor)))
+                    self.gline_gen(entities.GL(((p0, p2), self.geomcolor)))
 
     def join(self, p1=None):
         """Join 2 adjacent line segments. (Need not be colinear.)"""
