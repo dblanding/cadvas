@@ -464,7 +464,8 @@ class Draw(AppShell.AppShell):
     pt_stack = []           # points, in ECS (mm) units
     obj_stack = []          # canvas items picked from the screen
     sel_box_crnr = None     # first corner of selection box, if any
-    undo_stack = []         # list of dicts of drawing elements
+    cl_list = []            # all construction lines
+    undo_stack = []         # list of dicts of drawing entities
     redo_stack = []         # list of dicts popped off undo_stack
     filename = None         # name of file currently loaded (or saved as)
     dimgap = 10             # extension line gap (in canvas units) 
@@ -922,7 +923,9 @@ class Draw(AppShell.AppShell):
 
     def cline_gen(self, cline, add2list=1, rubber=0):
         '''Generate clines extending beyond the edge of the canvas.
+
         cline coords (a,b,c) are in ECS (mm) values.'''
+        
         # extend clines 500 canvas units beyond edge of canvas
         w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
         toplft = self.cp2ep((-500, -500))
@@ -938,18 +941,35 @@ class Draw(AppShell.AppShell):
                 else:
                     self.rubber = self.canvas.create_line(p1[0], p1[1],
                                                           p2[0], p2[1],
-                                                          fill='magenta',
+                                                          fill=constrcolor,
                                                           tags='r')
             else:
                 if self.rubber:
                     self.canvas.delete(self.rubber)
                     self.rubber = None
-                tkid = self.canvas.create_line(p1[0], p1[1], p2[0], p2[1],
-                                               fill='magenta', tags='c')
-                self.canvas.tag_lower(tkid)
-                self.cl_dict[tkid] = cline
-                if add2list:    # If regen, we don't want to add to list
+                handle = self.canvas.create_line(p1[0], p1[1], p2[0], p2[1],
+                                                 fill=constrcolor, tags='c')
+                self.canvas.tag_lower(handle)
+                attribs = (cline, constrcolor)
+                ent = entities.CL(attribs)
+                self.curr[handle] = cline
+                if add2list:  # If regen, we don't want to add to list
                     self.cl_list.append(cline)
+
+    def regen_all_cl(self, event=None):
+        """Delete existing clines, remove them from self.curr, and regenerate
+
+        all clines in cl_list. This needs to be done after pan or zoom because
+        the "infinite" length clines are not really infinite, they just hang off
+        the edge a little bit. Any clines that are outside the view area do
+        not get listed in cl_dict, therefore cl_list is needed so these lines
+        don't get lost."""
+        
+        cl_keylist = [k for k in self.curr if k is 'cl']
+        for handle in cl_keylist:
+            self.canvas.delete(handle)
+        for cline in self.cl_list:
+            self.cline_gen(cline, add2list=0)   # Must pass add2list=0 here
 
     def ccirc_gen(self, cc, tag='c'):
 
@@ -961,19 +981,6 @@ class Draw(AppShell.AppShell):
                                          tags=tag)
         self.curr[handle] = cc
         self.canvas.tag_lower(handle)
-
-    def regen_all_cl(self, event=None):
-        """Delete existing clines, clear cl_dict, and regenerate all clines
-        in cl_list. This needs to be done after pan or zoom because the
-        "infinite" length clines are not really infinite, they just hang off
-        the edge a little bit. Any clines that are outside the view area do
-        not get listed in cl_dict, therefore cl_list is needed so these lines
-        don't get lost."""
-        for item in self.cl_dict.keys():
-            self.canvas.delete(item)
-        self.cl_dict.clear()
-        for cline in self.cl_list:
-            self.cline_gen(cline, add2list=0)   # Must pass add2list=0 here
 
     def regen_all_cc(self, event=None):
         """Delete existing c_circles and regenerate c_circles in cc_list."""
