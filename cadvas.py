@@ -1822,13 +1822,17 @@ class Draw(AppShell.AppShell):
                 self.arcc2p()
 
     def translate(self, p=None):
-        """Move (or copy) selected geometry item(s) by two points. 
-        To copy items, enter number of copies. Otherwise, item(s) will be moved (not copied)."""
+        """Move (or copy) selected geometry item(s) by two points.
+
+        To copy items, enter number of copies.
+        Otherwise, item(s) will be moved (not copied)."""
         
-        if not self.obj_stack and not self.pt_stack and not self.float_stack:
+        if not self.obj_stack and not self.pt_stack and \
+           not self.float_stack:
             self.set_sel_mode('items')
             self.allow_list = 1
-            self.updateMessageBar('Specify number of copies or select geometry item(s) to move')
+            msg = 'Specify number of copies or select geometry item(s) to move'
+            self.updateMessageBar(msg)
         elif not self.obj_stack and not self.pt_stack:
             self.updateMessageBar('Select geometry item(s) to move')
         elif self.obj_stack and not self.pt_stack:
@@ -1844,45 +1848,39 @@ class Draw(AppShell.AppShell):
                 repeat = 0
             p1 = self.pt_stack.pop()
             p0 = self.pt_stack.pop()
-            items = self.obj_stack.pop()
+            handles = self.obj_stack.pop()
             dp = sub_pt(p1, p0)
             cx, cy = sub_pt(self.ep2cp(p1), self.ep2cp(p0))
-            if repeat:  # copy (repeat) times
-                for item in items:
-                    if item in self.gl_dict.keys():
-                        e = self.gl_dict[item]
-                        for x in range(repeat):
-                            e = (add_pt(e[0], dp), add_pt(e[1], dp))
-                            self.gline_gen(e)
-                    elif item in self.gc_dict.keys():
-                        e = self.gc_dict[item]
-                        for x in range(repeat):
-                            e = (add_pt(e[0], dp), e[1])
-                            self.circ_gen(e)
-                    elif item in self.ga_dict.keys():
-                        e = self.ga_dict[item]
-                        for x in range(repeat):
-                            e = (add_pt(e[0], dp), e[1], e[2], e[3])
-                            self.arc_gen(e)
-                    else:
-                        print('Only geometry type items can be moved with this command.')
-            else:   # move
-                for item in items:
-                    c = self.canvas.coords(item)
-                    if item in self.gl_dict.keys():
-                        e = self.gl_dict[item]
-                        self.gl_dict[item] = (add_pt(e[0], dp), add_pt(e[1], dp))
-                        self.canvas.coords(item, c[0]+cx, c[1]+cy, c[2]+cx, c[3]+cy)
-                    elif item in self.gc_dict.keys():
-                        e = self.gc_dict[item]
-                        self.gc_dict[item] = (add_pt(e[0], dp), e[1])
-                        self.canvas.coords(item, c[0]+cx, c[1]+cy, c[2]+cx, c[3]+cy)
-                    elif item in self.ga_dict.keys():
-                        e = self.ga_dict[item]
-                        self.ga_dict[item] = (add_pt(e[0], dp), e[1], e[2], e[3])
-                        self.canvas.coords(item, c[0]+cx, c[1]+cy, c[2]+cx, c[3]+cy)
-                    else:
-                        print('Only geometry type items can be moved with this command.')
+            items = [self.curr[handle] for handle in handles]
+            delete_original = False
+            if not repeat:  # move, (not copy)
+                delete_original = True
+                repeat = 1
+            for item in items:
+                if item.type is 'gl':
+                    e, _ = item.get_attribs()
+                    for x in range(repeat):
+                        e = (add_pt(e[0], dp), add_pt(e[1], dp))
+                        gl = entities.GL((e, self.geomcolor))
+                        self.gline_gen(gl)
+                elif item.type is 'gc':
+                    e, _ = item.get_attribs()
+                    for x in range(repeat):
+                        e = (add_pt(e[0], dp), e[1])
+                        gc = entities.GC((e, self.geomcolor))
+                        self.gcirc_gen(gc)
+                elif item.type is 'ga':
+                    e, _ = item.get_attribs()
+                    for x in range(repeat):
+                        e = (add_pt(e[0], dp), e[1], e[2], e[3])
+                        ga = entities.GA((e, self.geomcolor))
+                        self.garc_gen(ga)
+                else:
+                    print('Only geometry type items can be moved with this command.')
+            if delete_original:
+                for handle in handles:
+                    self.canvas.delete(handle)
+                    del self.curr[handle]
 
     def rotate(self, p=None):
         """Move (or copy) selected geometry item(s) by rotating about a point. 
