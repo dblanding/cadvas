@@ -562,17 +562,16 @@ class Draw(AppShell.AppShell):
             self.save(outfile)
 
     def save(self, file):
-        drawdict = {'cl': self.cl_list, 'cc': self.cc_dict,
-                    'gl': self.gl_dict, 'gc': self.gc_dict,
-                    'ga': self.ga_dict, 'dl': self.dl_dict,
-                    'tx': self.tx_dict, 'units': self.units}
+
+        drawlist = [{value.type: value.get_attribs()}
+                    for value in self.curr.values()]
         fext = os.path.splitext(file)[-1]
         if fext == '.dxf':
             import dxf
-            dxf.native2dxf(drawdict, file)
+            dxf.native2dxf(drawlist, file)
         elif fext == '.pkl':
             with open(file, 'wb') as f:
-                pickle.dump(drawdict, f)
+                pickle.dump(drawlist, f)
             self.filename = file
         elif not fext:
             print("Please type entire filename, including extension.")
@@ -592,21 +591,28 @@ class Draw(AppShell.AppShell):
             self.filename = file
         else:
             print("Load files of type {fext} not supported.")
-        for ent in drawlist:
-            if ent.type is 'cl':
+        for ent_dict in drawlist:
+            if 'cl' in ent_dict:
                 pass
-            elif ent.type is 'cc':
+            elif 'cc' in ent_dict:
                 pass
-            elif ent.type is 'gl':
+            elif 'gl' in ent_dict:
+                attribs = ent_dict['gl']
+                ent = entities.GL(attribs)
                 self.gline_gen(ent)
-            elif ent.type is 'gc':
+            elif 'gc' in ent_dict:
+                attribs = ent_dict['gc']
+                ent = entities.GC(attribs)
                 self.gcirc_gen(ent)
-            elif ent.type is 'ga':
+            elif 'ga' in ent_dict:
+                attribs = ent_dict['ga']
+                ent = entities.GA(attribs)
                 self.garc_gen(ent)
-            elif ent.type is 'tx':
+            elif 'tx' in ent_dict:
+                attribs = ent_dict['tx']
+                ent = entities.TX(attribs)
                 handle = self.text_gen(ent)
                 self.curr[handle] = ent
-            
         self.view_fit()
         self.save_delta()  # undo/redo thing
 

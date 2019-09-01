@@ -2,7 +2,6 @@
 """Utilities for translating between dxf and native cadvas (.pkl) format"""
 import math
 import ezdxf
-import entities
 from cadvas import geomcolor
 from cadvas import constrcolor
 
@@ -39,7 +38,7 @@ def cnvrt_2pts_to_coef(pt1, pt2):
     return (a, b, c)
 
 def dxf2native(filename):
-    """Generate cadvas native CAD data from dxf entities."""
+    """Generate a dictionary of {k=type: v=attribs} from dxf entities."""
 
     drawlist = []
     dwg = ezdxf.readfile(filename)
@@ -47,24 +46,20 @@ def dxf2native(filename):
         if e.dxftype() == 'XLINE':
             # print(e.dxfattribs())
             coords = pnt_n_vctr_to_coef(e.dxf.start, e.dxf.unit_vector)
-            cc = entities.CC((coords, constrcolor))
-            drawlist.append(cc)
+            drawlist.append({'cl': (coords, constrcolor)})
         if e.dxftype() == 'LINE':
             # print(e.dxfattribs())
             coords = (e.dxf.start, e.dxf.end)
-            gl = entities.GL((coords, geomcolor))
-            drawlist.append(gl)
+            drawlist.append({'gl': (coords, geomcolor)})
         elif e.dxftype() == 'CIRCLE':
             # print(e.dxfattribs())
             coords = (e.dxf.center, e.dxf.radius)
-            gc = entities.GC((coords, geomcolor))
-            drawlist.append(gc)
+            drawlist.append({'gc': (coords, geomcolor)})
         elif e.dxftype() == 'ARC':
             # print(e.dxfattribs())
             coords = (e.dxf.center, e.dxf.radius,
                       e.dxf.start_angle, e.dxf.end_angle)
-            ga = entities.GA((coords, geomcolor))
-            drawlist.append(ga)
+            drawlist.append({'ga': (coords, geomcolor)})
         elif e.dxftype() == 'TEXT':
             # print(e.dxfattribs())
             coords = e.dxfattribs()['align_point']
@@ -72,45 +67,46 @@ def dxf2native(filename):
             style = e.dxfattribs()['style']
             size = e.dxfattribs()['height']
             attribs = (coords, text, style, size, 'cyan')
-            tx = entities.TX(attribs)
-            drawlist.append(tx)
+            drawlist.append({'tx': attribs})
             
     return drawlist
 
 
-def native2dxf(drawdict, dxf_filename):
+def native2dxf(drawlist, dxf_filename):
     """Generate .dxf file format from native CADvas drawing."""
+    
     # Create a new DXF R2010 drawing
     dwg = ezdxf.new('R2010')  # Official DXF version name: 'AC1024'
     msp = dwg.modelspace()  # Create new model space
     # Add new entities to the model space
-    for coef in drawdict['cl']:
-        pnt, vctr = coef_to_pnt_n_vctr(coef)
-        msp.add_xline(pnt, vctr)
-    for p0, p1 in drawdict['gl'].values():
-        msp.add_line(p0, p1)
-    for center, radius in drawdict['gc'].values():
-        msp.add_circle(center, radius) 
-    for center, radius, start, end in drawdict['ga'].values():
-        msp.add_arc(center, radius, start, end)
-    for attribs in drawdict['tx'].values():
-        coords = attribs['coords']
-        text = attribs['text']
-        style = attribs['style']
-        size = attribs['size']
-        color = attribs['color']
-        dxfattribs = dict((('align_point', coords),
-                           ('halign', 2),
-                           ('height', size),
-                           ('insert', coords),
-                           ('layer', '0'),
-                           ('oblique', 0.0),
-                           ('paperspace', 0),
-                           ('rotation', 0.0),
-                           ('style', style),
-                           ('text', text),
-                           ('text_generation_flag', 0),
-                           ('valign', 2),
-                           ('width', 1.0)))
-        msp.add_text(text, dxfattribs)
+    for ent_dict in drawlist:
+        if 'cl' in ent_dict:
+            coords, color = ent_dict['cl']
+            pnt, vctr = coef_to_pnt_n_vctr(coords)
+            msp.add_xline(pnt, vctr)
+        if 'gl' in ent_dict:
+            (p0, p1), color = ent_dict['gl']
+            msp.add_line(p0, p1)
+        if 'gc' in ent_dict:
+            (center, radius), color = ent_dict['gc']
+            msp.add_circle(center, radius)
+        if 'ga' in ent_dict:
+            (center, radius, start, end), color = ent_dict['ga']
+            msp.add_arc(center, radius, start, end)
+        if 'tx' in ent_dict:
+            (coords, text, style, size, color) = ent_dict['tx']
+            dxfattribs = dict((('align_point', coords),
+                               ('halign', 2),
+                               ('height', size),
+                               ('insert', coords),
+                               ('layer', '0'),
+                               ('oblique', 0.0),
+                               ('paperspace', 0),
+                               ('rotation', 0.0),
+                               ('style', style),
+                               ('text', text),
+                               ('text_generation_flag', 0),
+                               ('valign', 2),
+                               ('width', 1.0)))
+            msp.add_text(text, dxfattribs)
     dwg.saveas(dxf_filename)
