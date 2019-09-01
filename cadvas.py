@@ -38,6 +38,12 @@ import pprint
 version = '0.4.0'
 date = 'July 2019'
 
+geomcolor = 'white'     # color of geometry entities
+constrcolor = 'magenta' # color of construction entities
+textcolor = 'cyan'      # text color
+dimcolor = 'red'        # dimension color
+rubbercolor = 'yellow'  # color of (temporary) rubber elements
+
 #===========================================================================
 # 
 # Math & geometry utility functions
@@ -462,13 +468,9 @@ class Draw(AppShell.AppShell):
     redo_stack = []         # list of dicts popped off undo_stack
     filename = None         # name of file currently loaded (or saved as)
     dimgap = 10             # extension line gap (in canvas units) 
-    dimcolor = 'red'        # color of dimensions
-    textcolor = 'cyan'      # default text color
     textsize = 10           # default text size
     textstyle = 'Calibri'   # default text style
-    rubbercolor = 'yellow'  # color of (temporary) rubber elements
-    geomcolor = 'white'     # geometry color
-    constcolor = 'magenta'  # Construction color
+
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
                  'inches': 25.4,
@@ -578,44 +580,30 @@ class Draw(AppShell.AppShell):
             print("Save files of type {fext} not supported.")
 
     def load(self, file):
+        """Load CAD data from file."""
+        
         fext = os.path.splitext(file)[-1]
         if fext == '.dxf':
             import dxf
-            drawdict = dxf.dxf2native(file)
+            drawlist = dxf.dxf2native(file)
         elif fext == '.pkl':
             with open(file, 'rb') as f:
-                drawdict = pickle.load(f)
+                drawlist = pickle.load(f)
             self.filename = file
         else:
             print("Load files of type {fext} not supported.")
-        keys = drawdict.keys()
-        if 'cl' in keys:
-            for coords in drawdict['cl']:
-                self.cline_gen(coords)
-        if 'cc' in keys:
-            for coords in drawdict['cc'].values():
-                self.circ_gen(coords, constr=1)
-        if 'gl' in keys:
-            for coords in drawdict['gl'].values():
-                self.gline_gen(coords)
-        if 'gc' in keys:
-            for coords in drawdict['gc'].values():
-                self.circ_gen(coords)
-        if 'ga' in keys:
-            for coords in drawdict['ga'].values():
-                self.arc_gen(coords)
-        if 'dl' in keys:
-            for coords in drawdict['dl'].values():
-                self.dim_gen(coords)
-        try:
-            if 'tx' in keys:
-                for attribs in drawdict['tx'].values():
-                    handle = self.text_gen(attribs)
-                    self.tx_dict[handle] = attribs
-        except:
-            pass
-        self.units = drawdict.get('units', 'mm')
-        self.set_units(self.units)
+        for ent in drawlist:
+            if ent.type is 'cl':
+                pass
+            elif ent.type is 'cc':
+                pass
+            elif ent.type is 'gl':
+                self.gline_gen(ent)
+            elif ent.type is 'gc':
+                self.gcirc_gen(ent)
+            elif ent.type is 'ga':
+                self.garc_gen(ent)
+            
         self.view_fit()
         self.save_delta()  # undo/redo thing
 
@@ -1407,7 +1395,7 @@ class Draw(AppShell.AppShell):
     def line(self, p1=None):
         '''Create line segment between 2 points. Enable 'rubber line' mode'''
         
-        rc = self.rubbercolor
+        rc = rubbercolor
         if not self.pt_stack:
             message = 'Pick start point of line or enter coords'
             message += self.shift_key_advice
@@ -1429,13 +1417,13 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(self.rtext)
             self.rtext = self.canvas.create_text(xr+20, yr-20,
                                                  text=strcoords,
-                                                 fill=self.textcolor)
+                                                 fill=textcolor)
             self.updateMessageBar('Specify end point of line')
         elif len(self.pt_stack) > 1:
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
             coords = (p1, p2)
-            attribs = (coords, self.geomcolor)
+            attribs = (coords, )
             gl = entities.GL(attribs)
             self.gline_gen(gl)
             if self.rubber:
@@ -1467,7 +1455,7 @@ class Draw(AppShell.AppShell):
     def rect(self, p2=None):
         '''Generate a rectangle from 2 diagonally opposite corners.'''
         
-        rc = self.rubbercolor
+        rc = rubbercolor
         if not self.pt_stack:
             self.updateMessageBar(
                 'Pick first corner of rectangle or enter coords')
@@ -1493,7 +1481,7 @@ class Draw(AppShell.AppShell):
             sides = ((a, b), (b, c), (c, d), (d, a))
             for p in sides:
                 coords = (p[0], p[1])
-                attribs = (coords, self.geomcolor)
+                attribs = (coords, geomcolor)
                 gl = entities.GL(attribs)
                 self.gline_gen(gl)
             if self.rubber:
@@ -1523,7 +1511,7 @@ class Draw(AppShell.AppShell):
         x, y = self.ep2cp(ctr)
         r = self.canvas.w2c_dx(rad)
         if rubber:
-            color = self.rubbercolor
+            color = rubbercolor
             tag = 'r'
             if self.rubber:
                 self.canvas.coords(self.rubber, x-r, y-r, x+r, y+r)
@@ -1533,11 +1521,11 @@ class Draw(AppShell.AppShell):
                                                       tags=tag)
         else:
             if constr:  # Constr circle
-                attribs = (coords, self.constrcolor)
+                attribs = (coords, constrcolor)
                 cc = entities.CC(attribs)
                 self.ccirc_gen(cc)
             else:  # geom circle
-                attribs = (coords, self.geomcolor)
+                attribs = (coords, geomcolor)
                 gc = entities.GC(attribs)
                 self.gcirc_gen(gc)
             if self.rubber:
@@ -1629,7 +1617,7 @@ class Draw(AppShell.AppShell):
                 ang1 = p2p_angle(p0, p1)
                 ang2 = p2p_angle(p0, p2)
                 coords = (p0, r, ang1, ang2)
-                attribs = (coords, self.rubbercolor)
+                attribs = (coords, rubbercolor)
                 ga = entities.GA(attribs)
                 self.garc_gen(ga, tag='r')
         elif len(self.pt_stack) == 3:
@@ -1640,7 +1628,7 @@ class Draw(AppShell.AppShell):
             ang1 = p2p_angle(p0, p1)
             ang2 = p2p_angle(p0, p2)
             coords = (p0, r, ang1, ang2)
-            attribs = (coords, self.geomcolor)
+            attribs = (coords, geomcolor)
             ga = entities.GA(attribs)
             self.garc_gen(ga)
 
@@ -1665,7 +1653,7 @@ class Draw(AppShell.AppShell):
                     if not pt_on_RHS_p(p3, p1, p2):
                         ang2, ang1 = ang1, ang2
                     coords = (pc, r, ang1, ang2)
-                    attribs = (coords, self.rubbercolor)
+                    attribs = (coords, rubbercolor)
                     ga = entities.GA(attribs)
                     self.garc_gen(ga, tag='r')
         elif len(self.pt_stack) == 3:
@@ -1678,7 +1666,7 @@ class Draw(AppShell.AppShell):
             if not pt_on_RHS_p(p3, p1, p2):
                 ang2, ang1 = ang1, ang2
             coords = (pc, r, ang1, ang2)
-            attribs = (coords, self.geomcolor)
+            attribs = (coords, geomcolor)
             ga = entities.GA(attribs)
             self.garc_gen(ga)
             if self.rubber:
@@ -1712,8 +1700,8 @@ class Draw(AppShell.AppShell):
             p2b = intersection(paraline2, crossline2)
             self.pt_stack.extend([p2a, p2b, p2e])
             self.arc3p()
-            self.gline_gen(entities.GL(((p1a, p2a), self.geomcolor)))
-            self.gline_gen(entities.GL(((p1b, p2b), self.geomcolor)))
+            self.gline_gen(entities.GL(((p1a, p2a), geomcolor)))
+            self.gline_gen(entities.GL(((p1b, p2b), geomcolor)))
 
     #=======================================================================
     # Modify geometry
@@ -1742,8 +1730,8 @@ class Draw(AppShell.AppShell):
                     (p1, p2), clr = self.curr[line].get_attribs()
                     del self.curr[line]
                     self.canvas.delete(line)
-                    self.gline_gen(entities.GL(((p0, p1), self.geomcolor)))
-                    self.gline_gen(entities.GL(((p0, p2), self.geomcolor)))
+                    self.gline_gen(entities.GL(((p0, p1), geomcolor)))
+                    self.gline_gen(entities.GL(((p0, p2), geomcolor)))
 
     def join(self, p1=None):
         """Join 2 adjacent line segments. (Need not be colinear.)"""
@@ -1774,7 +1762,7 @@ class Draw(AppShell.AppShell):
             for item in (item1, item2):
                 del self.curr[item]
                 self.canvas.delete(item)
-            self.gline_gen(entities.GL(((ep1, ep2), self.geomcolor)))
+            self.gline_gen(entities.GL(((ep1, ep2), geomcolor)))
 
     def fillet(self, p1=None):
         """Create a fillet of radius r at the common corner of 2 lines."""
@@ -1810,8 +1798,8 @@ class Draw(AppShell.AppShell):
                 for item in items:
                     del self.curr[item]
                     self.canvas.delete(item)
-                self.gline_gen(entities.GL(((ep1, tp1), self.geomcolor)))
-                self.gline_gen(entities.GL(((ep2, tp2), self.geomcolor)))
+                self.gline_gen(entities.GL(((ep1, tp1), geomcolor)))
+                self.gline_gen(entities.GL(((ep2, tp2), geomcolor)))
 
                 # make arc, but first, get the order of tp1 and tp2 right
                 a1 = math.atan2(tp1[1]-ctr[1], tp1[0]-ctr[0])
@@ -1861,19 +1849,19 @@ class Draw(AppShell.AppShell):
                     e, _ = item.get_attribs()
                     for x in range(repeat):
                         e = (add_pt(e[0], dp), add_pt(e[1], dp))
-                        gl = entities.GL((e, self.geomcolor))
+                        gl = entities.GL((e, geomcolor))
                         self.gline_gen(gl)
                 elif item.type is 'gc':
                     e, _ = item.get_attribs()
                     for x in range(repeat):
                         e = (add_pt(e[0], dp), e[1])
-                        gc = entities.GC((e, self.geomcolor))
+                        gc = entities.GC((e, geomcolor))
                         self.gcirc_gen(gc)
                 elif item.type is 'ga':
                     e, _ = item.get_attribs()
                     for x in range(repeat):
                         e = (add_pt(e[0], dp), e[1], e[2], e[3])
-                        ga = entities.GA((e, self.geomcolor))
+                        ga = entities.GA((e, geomcolor))
                         self.garc_gen(ga)
                 else:
                     print('Only geometry type items can be moved with this command.')
@@ -1917,19 +1905,19 @@ class Draw(AppShell.AppShell):
                     e, _ = item.get_attribs()
                     for x in range(self.repeat):
                         e = (rotate_pt(e[0], A, ctr), rotate_pt(e[1], A, ctr))
-                        gl = entities.GL((e, self.geomcolor))
+                        gl = entities.GL((e, geomcolor))
                         self.gline_gen(gl)
                 elif item.type is 'gc':
                     e, _ = item.get_attribs()
                     for x in range(self.repeat):
                         e = (rotate_pt(e[0], A, ctr), e[1])
-                        gc = entities.GC((e, self.geomcolor))
+                        gc = entities.GC((e, geomcolor))
                         self.gcirc_gen(gc)
                 elif itemtype is 'ga':
                     e, _ = item.get_attribs()
                     for x in range(self.repeat):
                         e = (rotate_pt(e[0], A, ctr), e[1], e[2]+A, e[3]+A)
-                        ga = entities.GA((e, self.geomcolor))
+                        ga = entities.GA((e, geomcolor))
                         self.garc_gen(ga)
                 else:
                     print('Only geometry type items can be moved with this command.')
@@ -1957,7 +1945,7 @@ class Draw(AppShell.AppShell):
         a dimension, just delete all 5 components, then regenerate them in
         the new position."""
         if not color:
-            color = self.dimcolor
+            color = dimcolor
         dimdir = para_line(dir, p3)
         p1b = proj_pt_on_line(dimdir, p1)
         p2b = proj_pt_on_line(dimdir, p2)
@@ -1993,7 +1981,7 @@ class Draw(AppShell.AppShell):
         """Create a linear dimension. Store the "dimension group ID" and the
         dimension coords=(p1,p2,p3,dir) as a key:value pair in self.dl_dict.
         """
-        rc = self.rubbercolor
+        rc = rubbercolor
         if not self.pt_stack:
             self.updateMessageBar('Pick 1st point.')
         elif len(self.pt_stack) == 1:
@@ -2101,7 +2089,7 @@ class Draw(AppShell.AppShell):
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
-        rc = self.rubbercolor
+        rc = rubbercolor
         if not self.text:
             self.text_entry_enable = 1
             self.updateMessageBar('Enter text')
@@ -2116,7 +2104,7 @@ class Draw(AppShell.AppShell):
         elif self.pt_stack:
             p = self.pt_stack.pop()
             attribs = (p, self.text, self.textstyle,
-                       self.textsize, self.textcolor)
+                       self.textsize, textcolor)
             tx = entities.TX(attribs)
             handle = self.text_gen(tx)
             self.curr[handle] = tx

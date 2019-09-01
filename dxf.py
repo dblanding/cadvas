@@ -2,6 +2,9 @@
 """Utilities for translating between dxf and native cadvas (.pkl) format"""
 import math
 import ezdxf
+import entities
+from cadvas import geomcolor
+from cadvas import constrcolor
 
 def pnt_n_vctr_to_coef(pnt, vector):
     (u, v, w) = pnt
@@ -38,35 +41,30 @@ def cnvrt_2pts_to_coef(pt1, pt2):
 def dxf2native(filename):
     """Generate cadvas native CAD data from dxf entities."""
 
-    cllist = []
-    gldict = {}
-    gcdict = {}
-    gadict = {}
-    txdict = {}
-    k = 0
+    drawlist = []
     dwg = ezdxf.readfile(filename)
     for e in dwg.modelspace():  # e = dxf entity
         if e.dxftype() == 'XLINE':
-            print(e.dxfattribs())
+            # print(e.dxfattribs())
             coords = pnt_n_vctr_to_coef(e.dxf.start, e.dxf.unit_vector)
-            k+=1
-            cllist.append(coords)
+            cc = entities.CC((coords, constrcolor))
+            drawlist.append(cc)
         if e.dxftype() == 'LINE':
             # print(e.dxfattribs())
             coords = (e.dxf.start, e.dxf.end)
-            k+=1
-            gldict[k] = coords
+            gl = entities.GL((coords, geomcolor))
+            drawlist.append(gl)
         elif e.dxftype() == 'CIRCLE':
             # print(e.dxfattribs())
             coords = (e.dxf.center, e.dxf.radius)
-            k+=1
-            gcdict[k] = coords
+            gc = entities.GC((coords, geomcolor))
+            drawlist.append(gc)
         elif e.dxftype() == 'ARC':
             # print(e.dxfattribs())
             coords = (e.dxf.center, e.dxf.radius,
                       e.dxf.start_angle, e.dxf.end_angle)
-            k+=1
-            gadict[k] = coords
+            ga = entities.GA((coords, geomcolor))
+            drawlist.append(ga)
         elif e.dxftype() == 'TEXT':
             # print(e.dxfattribs())
             coords = e.dxfattribs()['align_point']
@@ -78,16 +76,8 @@ def dxf2native(filename):
                             ('style', style),
                             ('size', size),
                             ('color', 'cyan')))
-            k += 1
-            txdict[k] = attribs
-
-    drawdict = {}
-    drawdict['cl'] = cllist
-    drawdict['gl'] = gldict
-    drawdict['gc'] = gcdict
-    drawdict['ga'] = gadict
-    drawdict['tx'] = txdict
-    return drawdict
+            
+    return drawlist
 
 
 def native2dxf(drawdict, dxf_filename):
