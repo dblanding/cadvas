@@ -1776,16 +1776,6 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(item)
             self.gline_gen(entities.GL(((ep1, ep2), self.geomcolor)))
 
-    def modify_line_coords(self, item, coords):
-        """Modify the coordinates of a line segment to new
-        values. Update self.gl_dict, too."""
-        
-        self.gl_dict[item] = coords
-        p1, p2 = coords
-        cx1, cy1 = self.ep2cp(p1)
-        cx2, cy2 = self.ep2cp(p2)
-        self.canvas.coords(item, cx1, cy1, cx2, cy2)
-
     def fillet(self, p1=None):
         """Create a fillet of radius r at the common corner of 2 lines."""
         
@@ -1804,8 +1794,10 @@ class Draw(AppShell.AppShell):
                    'g' in self.canvas.gettags(item):
                     items.append(item)
             if len(items) == 2:
-                pts = find_common_pt(self.gl_dict[items[0]],
-                                     self.gl_dict[items[1]])
+                line1coords, color = self.curr[items[0]].get_attribs()
+                line2coords, color = self.curr[items[1]].get_attribs()
+                pts = find_common_pt(line1coords,
+                                     line2coords)
                 if pts:
                     # common pt, other end pt1, other end pt2
                     cp, ep1, ep2 = pts
@@ -1815,8 +1807,11 @@ class Draw(AppShell.AppShell):
                 # find arc center and tangent points
                 ctr, tp1, tp2 = find_fillet_pts(rw, cp, ep1, ep2)
                 # shorten adjacent sides
-                self.modify_line_coords(items[0], (ep1, tp1))
-                self.modify_line_coords(items[1], (ep2, tp2))
+                for item in items:
+                    del self.curr[item]
+                    self.canvas.delete(item)
+                self.gline_gen(entities.GL(((ep1, tp1), self.geomcolor)))
+                self.gline_gen(entities.GL(((ep2, tp2), self.geomcolor)))
 
                 # make arc, but first, get the order of tp1 and tp2 right
                 a1 = math.atan2(tp1[1]-ctr[1], tp1[0]-ctr[0])
