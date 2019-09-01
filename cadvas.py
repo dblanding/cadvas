@@ -603,6 +603,9 @@ class Draw(AppShell.AppShell):
                 self.gcirc_gen(ent)
             elif ent.type is 'ga':
                 self.garc_gen(ent)
+            elif ent.type is 'tx':
+                handle = self.text_gen(ent)
+                self.curr[handle] = ent
             
         self.view_fit()
         self.save_delta()  # undo/redo thing
@@ -1423,7 +1426,7 @@ class Draw(AppShell.AppShell):
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
             coords = (p1, p2)
-            attribs = (coords, )
+            attribs = (coords, geomcolor)
             gl = entities.GL(attribs)
             self.gline_gen(gl)
             if self.rubber:

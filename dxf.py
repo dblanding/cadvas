@@ -71,11 +71,9 @@ def dxf2native(filename):
             text = e.dxfattribs()['text']
             style = e.dxfattribs()['style']
             size = e.dxfattribs()['height']
-            attribs = dict((('coords', coords),
-                            ('text', text),
-                            ('style', style),
-                            ('size', size),
-                            ('color', 'cyan')))
+            attribs = (coords, text, style, size, 'cyan')
+            tx = entities.TX(attribs)
+            drawlist.append(tx)
             
     return drawlist
 
