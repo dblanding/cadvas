@@ -173,7 +173,7 @@ class DL:
     """Dimension Linear object initialized with a tuple of attributes.
 
     attribs = (coords, color)
-    coords = (p1, p2, p3, dir)
+    coords = (p1, p2, p3, d)
     """
 
     def __init__(self, attribs):

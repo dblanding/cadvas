@@ -753,6 +753,8 @@ class Draw(AppShell.AppShell):
                                  label='Redo', command=self.redo)
         self.menuBar.addmenuitem('Edit', 'command', 'Clear Redo',
                                  label='Clr Redo', command=self.clear_redo)
+        self.menuBar.addmenuitem('Edit', 'command', 'Clear Undo',
+                                 label='Clr Undo', command=self.clear_undo)
         self.menuBar.addmenu('View', 'View commands')
         self.menuBar.addmenuitem('View', 'command', 'Fit geometry to screen',
                                  label='Fit', command=self.view_fit)
@@ -825,6 +827,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Debug', 'command', 'Show Undo',
                                  label='Show Undo',
                                  command=lambda k='show_undo':self.dispatch(k))
+        self.menuBar.addmenuitem('Debug', 'command', 'Show Redo',
+                                 label='Show Redo',
+                                 command=lambda k='show_redo':self.dispatch(k))
         
 
     def createTools(self):
@@ -920,6 +925,10 @@ class Draw(AppShell.AppShell):
         pprint.pprint(self.undo_stack)
         self.end()
         
+    def show_redo(self):
+        pprint.pprint(self.redo_stack)
+        self.end()
+
     #=======================================================================
     # Construction
     # construction lines (clines) are "infinite" length lines
@@ -1384,17 +1393,20 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def gline_gen(self, gl):
-        """Create line segment between two pts in engineering (mm) coords.
-        Store coords in self.curr."""
-        
-        tkid = self.line_gen(gl)
+        """Create line segment from gl object. Store {id: obj} in self.curr.
+
+        This is provides access to line_gen using a gl object."""
+
+        coords, color = gl.get_attribs()
+        tkid = self.line_gen(coords, color)
         self.curr[tkid] = gl
         
-    def line_gen(self, gl, arrow=None, tag='g'):
-        """Create line segment between two pts in engineering (mm) coords.
-        Return item ID of line."""
+    def line_gen(self, coords, color, arrow=None, tag='g'):
+        """Create and display line segment between two pts. Return ID.
+
+        This is a low level method that accesses the canvas directly &
+        returns tkid. The caller can save to self.curr if needed."""
         
-        coords, color = gl.get_attribs()
         p1, p2 = coords
         xa, ya = self.ep2cp(p1)
         xb, yb = self.ep2cp(p2)
@@ -1938,15 +1950,16 @@ class Draw(AppShell.AppShell):
                 
     #=======================================================================
     # Dimensions
-    # linear dimensions have coords:    (p1, p2, p3, dir)
+    # linear dimensions have coords:    (p1, p2, p3, d)
     # where p1 and p2 are the points being dimensioned,
-    # dir is the cline parallel to which the dimension is being measured,
+    # d is the direction along which the dimension is being measured,
+    # represented by the coefficients of a cline: d = (a, b, c)
     # and p3 is the location of the center of the dimension text.
     #=======================================================================
 
-    def dim_aligned(self, p1, p2, p3, dir, color=None):
-        """Create a linear dimension in direction dir=(a,b,c) between p1 and
-        p2, with ctr of text positioned at p3.
+    def dim_aligned(self, dimobj):
+        """Create a linear dimension on the canvas from a dimension object.
+        
         There are 5 individual components that make up a linear dimension:
         The text, 2 dimension lines, and 2 extension lines. Each component
         shares a tag which is unique to this 'group' of 5 components. This
@@ -1954,19 +1967,19 @@ class Draw(AppShell.AppShell):
         is intended to treat dimensions as 'disposable'. For example, to move
         a dimension, just delete all 5 components, then regenerate them in
         the new position."""
-        if not color:
-            color = dimcolor
-        dimdir = para_line(dir, p3)
+
+        (p1, p2, p3, c), color = dimobj.get_attribs()
+        dimdir = para_line(c, p3)
         p1b = proj_pt_on_line(dimdir, p1)
         p2b = proj_pt_on_line(dimdir, p2)
         d = p2p_dist(p1b, p2b) / self.unitscale
         text = '%.3f' % d
         x3, y3 = self.ep2cp(p3)
-        id = self.canvas.create_text(x3, y3, fill=color, text=text)
-        dgidtag = 'd%s' % id  # unique dimension group ID tag
-        self.canvas.itemconfig(id, tags=('d', dgidtag))
+        tkid = self.canvas.create_text(x3, y3, fill=color, text=text)
+        dgidtag = 'd%s' % tkid  # unique dimension group ID tag
+        self.canvas.itemconfig(tkid, tags=('d', dgidtag))
         # create dimension lines
-        xa, ya, xb, yb = self.canvas.bbox(id)
+        xa, ya, xb, yb = self.canvas.bbox(tkid)
         xa, ya = self.cp2ep((xa, ya))
         xb, yb = self.cp2ep((xb, yb))
         innerpts = cline_box_intrsctn(dimdir, (xa, ya, xb, yb))
@@ -1987,10 +2000,25 @@ class Draw(AppShell.AppShell):
         return dgidtag
         
 
-    def dim_lin(self, p=None, dir=(0,1,0)):
-        """Create a linear dimension. Store the "dimension group ID" and the
-        dimension coords=(p1,p2,p3,dir) as a key:value pair in self.dl_dict.
-        """
+    def dim_gen(self, dl):
+        """Generate dimension from DL object passed as arg."""
+        
+        p1, p2, p3, c = dl.coords 
+        dgid = self.dim_aligned(p1, p2, p3, c)
+        self.curr[dgid] = dl
+
+    def regen_all_dims(self, event=None):
+        """Delete all existing dimensions, clear dl_dict, and regenerate.
+        This needs to be done after zoom because the dimension text does
+        not change size with zoom."""
+        dimlist = [v.coords for v in self.curr.values() if v.type is 'dl']
+        self.del_all_d()
+        for coords in dimlist:
+            self.dim_gen(coords)
+
+    def dim_lin(self, p=None, d=(0,1,0)):
+        """Manually create a linear dimension obj. Add to self.curr."""
+
         rc = rubbercolor
         if not self.pt_stack:
             self.updateMessageBar('Pick 1st point.')
@@ -2005,7 +2033,9 @@ class Draw(AppShell.AppShell):
                 if self.rubber:
                     for each in self.canvas.find_withtag(self.rubber):
                         self.canvas.delete(each)
-                self.rubber = self.dim_aligned(p1, p2, p3, dir, color=rc)
+                att = ((p1, p2, p3, d), rc)
+                rubber_ent = entities.DL(att)
+                self.rubber = self.dim_aligned(rubber_ent)
         elif len(self.pt_stack) == 3:
             if self.rubber:
                 for each in self.canvas.find_withtag(self.rubber):
@@ -2013,23 +2043,11 @@ class Draw(AppShell.AppShell):
             p3 = self.pt_stack.pop()
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
-            dgid = self.dim_aligned(p1, p2, p3, dir)
-            self.dl_dict[dgid] = (p1, p2, p3, dir)
-
-    def dim_gen(self, coords):
-        """Generate dimension from coords passed as arg."""
-        p1, p2, p3, dir = coords 
-        dgid = self.dim_aligned(p1, p2, p3, dir)
-        self.dl_dict[dgid] = coords
-
-    def regen_all_dims(self, event=None):
-        """Delete all existing dimensions, clear dl_dict, and regenerate.
-        This needs to be done after zoom because the dimension text does
-        not change size with zoom."""
-        dimlist = list(self.dl_dict.values())
-        self.del_all_d()
-        for coords in dimlist:
-            self.dim_gen(coords)
+            coords = (p1, p2, p3, d)
+            attribs = (coords, dimcolor)
+            ent = entities.DL(attribs)
+            dgid = self.dim_aligned(ent)
+            self.curr[dgid] = ent
 
     def dim_h(self, p=None):
         """Create a horizontal dimension"""
@@ -2037,7 +2055,7 @@ class Draw(AppShell.AppShell):
 
     def dim_v(self, p=None):
         """Create a vertical dimension"""
-        self.dim_lin(p, dir=(1,0,0))
+        self.dim_lin(p, d=(1,0,0))
 
     def dim_par(self, p=None):
         """Create a dimension parallel to a selected line element."""
@@ -2050,14 +2068,14 @@ class Draw(AppShell.AppShell):
             item = self.obj_stack[-1][0]
             if self.canvas.type(item) == 'line':
                 tags = self.canvas.gettags(item)
-                dir = None
+                d = None
                 if 'c' in tags:
-                    dir = self.curr[item].coords
+                    d = self.curr[item].coords
                 elif 'g' in tags:
                     p1, p2 = self.curr[item].coords
-                    dir = cnvrt_2pts_to_coef(p1, p2)
-                if dir:
-                    self.dim_lin(p, dir)
+                    d = cnvrt_2pts_to_coef(p1, p2)
+                if d:
+                    self.dim_lin(p, d)
 
     #=======================================================================
     # Text
@@ -2386,6 +2404,9 @@ class Draw(AppShell.AppShell):
 
     def clear_redo(self):  # clear redo stack
         self.redo_stack.clear()
+
+    def clear_undo(self):  # clear undo stack
+        self.undo_stack.clear()
 
     #=======================================================================
     # Event handling
