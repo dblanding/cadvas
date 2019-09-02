@@ -464,9 +464,8 @@ class Draw(AppShell.AppShell):
     pt_stack = []           # points, in ECS (mm) units
     obj_stack = []          # canvas items picked from the screen
     sel_box_crnr = None     # first corner of selection box, if any
-    cl_list = []            # all construction lines
-    undo_stack = []         # list of dicts of drawing entities
-    redo_stack = []         # list of dicts popped off undo_stack
+    undo_stack = []         # list of dicts of sets of entities
+    redo_stack = []         # data popped off undo_stack
     filename = None         # name of file currently loaded (or saved as)
     dimgap = 10             # extension line gap (in canvas units) 
     textsize = 10           # default text size
@@ -564,8 +563,8 @@ class Draw(AppShell.AppShell):
 
     def save(self, file):
 
-        drawlist = [{value.type: value.get_attribs()}
-                    for value in self.curr.values()]
+        drawlist = [{entity.type: entity.get_attribs()}
+                    for entity in self.curr.values()]
         fext = os.path.splitext(file)[-1]
         if fext == '.dxf':
             import dxf
@@ -599,21 +598,21 @@ class Draw(AppShell.AppShell):
                 pass
             elif 'gl' in ent_dict:
                 attribs = ent_dict['gl']
-                ent = entities.GL(attribs)
-                self.gline_gen(ent)
+                e = entities.GL(attribs)
+                self.gline_gen(e)
             elif 'gc' in ent_dict:
                 attribs = ent_dict['gc']
-                ent = entities.GC(attribs)
-                self.gcirc_gen(ent)
+                e = entities.GC(attribs)
+                self.gcirc_gen(e)
             elif 'ga' in ent_dict:
                 attribs = ent_dict['ga']
-                ent = entities.GA(attribs)
-                self.garc_gen(ent)
+                e = entities.GA(attribs)
+                self.garc_gen(e)
             elif 'tx' in ent_dict:
                 attribs = ent_dict['tx']
-                ent = entities.TX(attribs)
-                handle = self.text_gen(ent)
-                self.curr[handle] = ent
+                e = entities.TX(attribs)
+                handle = self.text_gen(e)
+                self.curr[handle] = e
         self.view_fit()
         self.save_delta()  # undo/redo thing
 
@@ -818,9 +817,6 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Debug', 'command', 'Show Curr',
                                  label='Show Curr',
                                  command=lambda k='show_curr':self.dispatch(k))
-        self.menuBar.addmenuitem('Debug', 'command', 'Show CL List',
-                                 label='Show CL_List',
-                                 command=lambda k='show_cl_list':self.dispatch(k))
         self.menuBar.addmenuitem('Debug', 'command', 'Show Prev',
                                  label='Show Prev',
                                  command=lambda k='show_prev':self.dispatch(k))
@@ -913,10 +909,6 @@ class Draw(AppShell.AppShell):
         pprint.pprint(self.curr)
         self.end()
 
-    def show_cl_list(self):
-        pprint.pprint(self.cl_list)
-        self.end()
-
     def show_prev(self):
         pprint.pprint(self.prev)
         self.end()
@@ -938,7 +930,7 @@ class Draw(AppShell.AppShell):
     # circles are defined by coordinates:   (pc, r)
     #=======================================================================
 
-    def cline_gen(self, cline, add2list=1, rubber=0):
+    def cline_gen(self, cline, rubber=0):
         '''Generate clines extending beyond the edge of the canvas.
 
         cline coords (a,b,c) are in ECS (mm) values.'''
@@ -968,10 +960,8 @@ class Draw(AppShell.AppShell):
                                                  fill=constrcolor, tags='c')
                 self.canvas.tag_lower(handle)
                 attribs = (cline, constrcolor)
-                ent = entities.CL(attribs)
-                self.curr[handle] = ent
-                if add2list:  # If regen, we don't want to add to list
-                    self.cl_list.append(cline)
+                e = entities.CL(attribs)
+                self.curr[handle] = e
 
     def regen_all_cl(self, event=None):
         """Delete existing clines, remove them from self.curr, and regenerate
@@ -983,12 +973,13 @@ class Draw(AppShell.AppShell):
         don't get lost."""
         
         cl_keylist = [k for k, v in self.curr.items() if v.type is 'cl']
+        cl_list = [v.coords for v in self.curr.values() if v.type is 'cl']
         print(cl_keylist)
         for handle in cl_keylist:
             self.canvas.delete(handle)
             del self.curr[handle]
-        for cline in self.cl_list:
-            self.cline_gen(cline, add2list=0)   # Must pass add2list=0 here
+        for cline in cl_list:
+            self.cline_gen(cline)
 
     def ccirc_gen(self, cc, tag='c'):
 
@@ -1446,8 +1437,8 @@ class Draw(AppShell.AppShell):
             p1 = self.pt_stack.pop()
             coords = (p1, p2)
             attribs = (coords, geomcolor)
-            gl = entities.GL(attribs)
-            self.gline_gen(gl)
+            e = entities.GL(attribs)
+            self.gline_gen(e)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
@@ -1504,8 +1495,8 @@ class Draw(AppShell.AppShell):
             for p in sides:
                 coords = (p[0], p[1])
                 attribs = (coords, geomcolor)
-                gl = entities.GL(attribs)
-                self.gline_gen(gl)
+                e = entities.GL(attribs)
+                self.gline_gen(e)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
@@ -1544,12 +1535,12 @@ class Draw(AppShell.AppShell):
         else:
             if constr:  # Constr circle
                 attribs = (coords, constrcolor)
-                cc = entities.CC(attribs)
-                self.ccirc_gen(cc)
+                e = entities.CC(attribs)
+                self.ccirc_gen(e)
             else:  # geom circle
                 attribs = (coords, geomcolor)
-                gc = entities.GC(attribs)
-                self.gcirc_gen(gc)
+                e = entities.GC(attribs)
+                self.gcirc_gen(e)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
@@ -1640,8 +1631,8 @@ class Draw(AppShell.AppShell):
                 ang2 = p2p_angle(p0, p2)
                 coords = (p0, r, ang1, ang2)
                 attribs = (coords, rubbercolor)
-                ga = entities.GA(attribs)
-                self.garc_gen(ga, tag='r')
+                e = entities.GA(attribs)
+                self.garc_gen(e, tag='r')
         elif len(self.pt_stack) == 3:
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
@@ -1651,8 +1642,8 @@ class Draw(AppShell.AppShell):
             ang2 = p2p_angle(p0, p2)
             coords = (p0, r, ang1, ang2)
             attribs = (coords, geomcolor)
-            ga = entities.GA(attribs)
-            self.garc_gen(ga)
+            e = entities.GA(attribs)
+            self.garc_gen(e)
 
     def arc3p(self, p3=None):
         """Create an arc from start pt, end pt, and 3rd pt on the arc."""
@@ -1676,8 +1667,8 @@ class Draw(AppShell.AppShell):
                         ang2, ang1 = ang1, ang2
                     coords = (pc, r, ang1, ang2)
                     attribs = (coords, rubbercolor)
-                    ga = entities.GA(attribs)
-                    self.garc_gen(ga, tag='r')
+                    e = entities.GA(attribs)
+                    self.garc_gen(e, tag='r')
         elif len(self.pt_stack) == 3:
             p3 = self.pt_stack.pop()
             p2 = self.pt_stack.pop()
@@ -1689,8 +1680,8 @@ class Draw(AppShell.AppShell):
                 ang2, ang1 = ang1, ang2
             coords = (pc, r, ang1, ang2)
             attribs = (coords, geomcolor)
-            ga = entities.GA(attribs)
-            self.garc_gen(ga)
+            e = entities.GA(attribs)
+            self.garc_gen(e)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None 
@@ -1868,22 +1859,24 @@ class Draw(AppShell.AppShell):
                 repeat = 1
             for item in items:
                 if item.type is 'gl':
-                    e, _ = item.get_attribs()
+                    pnts, _ = item.get_attribs()
                     for x in range(repeat):
-                        e = (add_pt(e[0], dp), add_pt(e[1], dp))
-                        gl = entities.GL((e, geomcolor))
+                        pnts = (add_pt(pnts[0], dp),
+                                add_pt(pnts[1], dp))
+                        gl = entities.GL((pnts, geomcolor))
                         self.gline_gen(gl)
                 elif item.type is 'gc':
-                    e, _ = item.get_attribs()
+                    pnts, _ = item.get_attribs()
                     for x in range(repeat):
-                        e = (add_pt(e[0], dp), e[1])
-                        gc = entities.GC((e, geomcolor))
+                        pnts = (add_pt(e[0], dp), pnts[1])
+                        gc = entities.GC((pnts, geomcolor))
                         self.gcirc_gen(gc)
                 elif item.type is 'ga':
-                    e, _ = item.get_attribs()
+                    pnts, _ = item.get_attribs()
                     for x in range(repeat):
-                        e = (add_pt(e[0], dp), e[1], e[2], e[3])
-                        ga = entities.GA((e, geomcolor))
+                        pnts = (add_pt(pnts[0], dp),
+                                pnts[1], pnts[2], pnts[3])
+                        ga = entities.GA((pnts, geomcolor))
                         self.garc_gen(ga)
                 else:
                     print('Only geometry type items can be moved with this command.')
@@ -1924,22 +1917,24 @@ class Draw(AppShell.AppShell):
                 repeat = 1
             for item in items:
                 if item.type is 'gl':
-                    e, _ = item.get_attribs()
+                    pnts, _ = item.get_attribs()
                     for x in range(self.repeat):
-                        e = (rotate_pt(e[0], A, ctr), rotate_pt(e[1], A, ctr))
-                        gl = entities.GL((e, geomcolor))
+                        pnts = (rotate_pt(pnts[0], A, ctr),
+                                rotate_pt(pnts[1], A, ctr))
+                        gl = entities.GL((pnts, geomcolor))
                         self.gline_gen(gl)
                 elif item.type is 'gc':
-                    e, _ = item.get_attribs()
+                    pnts, _ = item.get_attribs()
                     for x in range(self.repeat):
-                        e = (rotate_pt(e[0], A, ctr), e[1])
-                        gc = entities.GC((e, geomcolor))
+                        pnts = (rotate_pt(pnts[0], A, ctr), pnts[1])
+                        gc = entities.GC((pnts, geomcolor))
                         self.gcirc_gen(gc)
                 elif itemtype is 'ga':
-                    e, _ = item.get_attribs()
+                    pnts, _ = item.get_attribs()
                     for x in range(self.repeat):
-                        e = (rotate_pt(e[0], A, ctr), e[1], e[2]+A, e[3]+A)
-                        ga = entities.GA((e, geomcolor))
+                        pnts = (rotate_pt(pnts[0], A, ctr),
+                                pnts[1], pnts[2] + A, pnts[3] + A)
+                        ga = entities.GA((pnts, geomcolor))
                         self.garc_gen(ga)
                 else:
                     print('Only geometry type items can be moved with this command.')
@@ -2000,15 +1995,16 @@ class Draw(AppShell.AppShell):
         return dgidtag
         
 
-    def dim_gen(self, dl):
+    def dim_gen(self, coords):
         """Generate dimension from DL object passed as arg."""
         
-        p1, p2, p3, c = dl.coords 
+        p1, p2, p3, c = coords 
         dgid = self.dim_aligned(p1, p2, p3, c)
         self.curr[dgid] = dl
 
     def regen_all_dims(self, event=None):
-        """Delete all existing dimensions, clear dl_dict, and regenerate.
+        """Delete all existing dimensions, and regenerate.
+
         This needs to be done after zoom because the dimension text does
         not change size with zoom."""
         dimlist = [v.coords for v in self.curr.values() if v.type is 'dl']
@@ -2045,9 +2041,9 @@ class Draw(AppShell.AppShell):
             p1 = self.pt_stack.pop()
             coords = (p1, p2, p3, d)
             attribs = (coords, dimcolor)
-            ent = entities.DL(attribs)
-            dgid = self.dim_aligned(ent)
-            self.curr[dgid] = ent
+            e = entities.DL(attribs)
+            dgid = self.dim_aligned(e)
+            self.curr[dgid] = e
 
     def dim_h(self, p=None):
         """Create a horizontal dimension"""
@@ -2194,8 +2190,6 @@ class Draw(AppShell.AppShell):
             item_tuple = self.obj_stack.pop()
             for item in item_tuple:
                 if item in self.curr:
-                    if self.curr[item].type is 'cl':
-                        self.cl_list.remove(self.curr[item].coords)
                     del self.curr[item]
                     self.canvas.delete(item)
                 else:
@@ -2212,7 +2206,6 @@ class Draw(AppShell.AppShell):
         delete = [k for k, v in self.curr.items() if v.type in ('cl', 'cc')]
         for k in delete:
             del self.curr[k]
-            self.cl_list = []
         for item in self.canvas.find_withtag('c'):
             self.canvas.delete(item)
              
@@ -2400,7 +2393,7 @@ class Draw(AppShell.AppShell):
         for k, v in kvlist:
             if v == entity:
                 self.canvas.delete(k)
-                self.curr.pop(k)  # alternatively: del self.curr[k]
+                del self.curr[k]
 
     def clear_redo(self):  # clear redo stack
         self.redo_stack.clear()
