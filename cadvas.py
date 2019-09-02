@@ -680,24 +680,26 @@ class Draw(AppShell.AppShell):
             self.updateMessageBar('Pick element from drawing.')
             self.set_sel_mode('items')
         elif self.obj_stack:
+            elem = None
             for item in self.obj_stack.pop():
                 if 'g' in self.canvas.gettags(item):
-                    elem = item
-            len = 0
-            if elem in self.gl_dict:
-                p1, p2 = self.gl_dict[elem] 
-                len = p2p_dist(p1, p2) / self.unitscale
-            elif elem in self.gc_dict:
-                len = math.pi*2*self.gc_dict[elem][1]/self.unitscale
-            elif elem in self.cc_dict:
-                len = math.pi*2*self.cc_dict[elem][1]/self.unitscale
-            elif elem in self.ga_dict:
-                pc, r, a0, a1 = self.ga_dict[elem]
-                ang = float(self.canvas.itemcget(elem, 'extent'))
-                len = math.pi*r*ang/180/self.unitscale
-            if len:
-                self.launch_calc()
-                self.calculator.putx(len)
+                    elem = self.curr[item]
+            length = 0
+            if elem:
+                if elem.type is 'gl':
+                    p1, p2 = elem.coords
+                    length = p2p_dist(p1, p2) / self.unitscale
+                elif elem.type is 'gc':
+                    length = math.pi*2*elem.coords[1]/self.unitscale
+                elif elem.type is 'cc':
+                    length = math.pi*2*elem.coords[1]/self.unitscale
+                elif elem.type is 'ga':
+                    pc, r, a0, a1 = elem.coords
+                    ang = float(self.canvas.itemcget(item, 'extent'))
+                    length = math.pi*r*ang/180/self.unitscale
+                if length:
+                    self.launch_calc()
+                    self.calculator.putx(length)
 
     def launch_calc(self):
         if not self.calculator:
@@ -814,6 +816,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Debug', 'command', 'Show Curr',
                                  label='Show Curr',
                                  command=lambda k='show_curr':self.dispatch(k))
+        self.menuBar.addmenuitem('Debug', 'command', 'Show CL List',
+                                 label='Show CL_List',
+                                 command=lambda k='show_cl_list':self.dispatch(k))
         self.menuBar.addmenuitem('Debug', 'command', 'Show Prev',
                                  label='Show Prev',
                                  command=lambda k='show_prev':self.dispatch(k))
@@ -897,11 +902,14 @@ class Draw(AppShell.AppShell):
 
     #=======================================================================
     # Debug Tools
-    #
     #=======================================================================
 
     def show_curr(self):
         pprint.pprint(self.curr)
+        self.end()
+
+    def show_cl_list(self):
+        pprint.pprint(self.cl_list)
         self.end()
 
     def show_prev(self):
@@ -952,7 +960,7 @@ class Draw(AppShell.AppShell):
                 self.canvas.tag_lower(handle)
                 attribs = (cline, constrcolor)
                 ent = entities.CL(attribs)
-                self.curr[handle] = cline
+                self.curr[handle] = ent
                 if add2list:  # If regen, we don't want to add to list
                     self.cl_list.append(cline)
 
@@ -965,9 +973,11 @@ class Draw(AppShell.AppShell):
         not get listed in cl_dict, therefore cl_list is needed so these lines
         don't get lost."""
         
-        cl_keylist = [k for k in self.curr if k is 'cl']
+        cl_keylist = [k for k, v in self.curr.items() if v.type is 'cl']
+        print(cl_keylist)
         for handle in cl_keylist:
             self.canvas.delete(handle)
+            del self.curr[handle]
         for cline in self.cl_list:
             self.cline_gen(cline, add2list=0)   # Must pass add2list=0 here
 
@@ -981,14 +991,6 @@ class Draw(AppShell.AppShell):
                                          tags=tag)
         self.curr[handle] = cc
         self.canvas.tag_lower(handle)
-
-    def regen_all_cc(self, event=None):
-        """Delete existing c_circles and regenerate c_circles in cc_list."""
-        for item in self.cc_dict.keys():
-            self.canvas.delete(item)
-        self.cc_dict.clear()
-        for ccirc in self.cc_list:
-            self.circ_gen(ccirc, constr=1)
 
     def hcl(self, pnt=None):
         """Create horizontal construction line from one point or y value."""
@@ -1078,7 +1080,7 @@ class Draw(AppShell.AppShell):
         """Create a construction line at an angle relative to a reference."""
         
         if not self.pt_stack:
-            messsage = 'Specify point for new construction line'
+            message = 'Specify point for new construction line'
             message += self.shift_key_advice
             self.updateMessageBar(message)
         elif not self.float_stack:
@@ -1196,9 +1198,9 @@ class Draw(AppShell.AppShell):
                 baseline = (0,0,0)
                 if self.canvas.type(item) == 'line':
                     if 'c' in self.canvas.gettags(item):
-                        baseline = self.cl_dict[item]
+                        baseline = self.curr[item].coords
                     elif 'g' in self.canvas.gettags(item):
-                        p1, p2 = self.gl_dict[item]
+                        p1, p2 = self.curr[item].coords
                         baseline = cnvrt_2pts_to_coef(p1, p2)
                 d = self.float_stack[-1]*self.unitscale
                 cline1, cline2 = para_lines(baseline, d)
@@ -1218,9 +1220,9 @@ class Draw(AppShell.AppShell):
             baseline = (0,0,0)
             if self.canvas.type(item) == 'line':
                 if 'c' in self.canvas.gettags(item):
-                    baseline = self.cl_dict[item]
+                    baseline = self.curr[item].coords
                 elif 'g' in self.canvas.gettags(item):
-                    p1, p2 = self.gl_dict[item]
+                    p1, p2 = self.curr[item].coords
                     baseline = cnvrt_2pts_to_coef(p1, p2)
             if not self.pt_stack:
                 self.set_sel_mode('pnt')
@@ -1254,9 +1256,9 @@ class Draw(AppShell.AppShell):
             baseline = (0,0,0)
             if self.canvas.type(item) == 'line':
                 if 'c' in self.canvas.gettags(item):
-                    baseline = self.cl_dict[item]
+                    baseline = self.curr[item].coords
                 elif 'g' in self.canvas.gettags(item):
-                    p1, p2 = self.gl_dict[item]
+                    p1, p2 = self.curr[item].coords
                     baseline = cnvrt_2pts_to_coef(p1, p2)
             if self.pt_stack:
                 p = self.pt_stack.pop()
@@ -1281,10 +1283,8 @@ class Draw(AppShell.AppShell):
             item = self.obj_stack.pop()[0]
             p = self.pt_stack.pop()
             circ = None
-            if item in self.gc_dict.keys():
-                circ = self.gc_dict[item]
-            elif item in self.cc_dict.keys():
-                circ = self.cc_dict[item]
+            if self.curr[item].type in ('gc', 'cc'):
+                circ = self.curr[item].coords
             if circ:
                 p1, p2 = line_tan_to_circ(circ, p)
                 cline1 = cnvrt_2pts_to_coef(p1, p)
@@ -1304,14 +1304,10 @@ class Draw(AppShell.AppShell):
             item1 = self.obj_stack.pop()[0]
             item2 = self.obj_stack.pop()[0]
             circ1 = circ2 = None
-            if item1 in self.gc_dict.keys():
-                circ1 = self.gc_dict[item1]
-            elif item1 in self.cc_dict.keys():
-                circ1 = self.cc_dict[item1]
-            if item2 in self.gc_dict.keys():
-                circ2 = self.gc_dict[item2]
-            elif item2 in self.cc_dict.keys():
-                circ2 = self.cc_dict[item2]
+            if self.curr[item1].type in ('gc', 'cc'):
+                circ1 = self.curr[item1].coords
+            if self.curr[item2].type in ('gc', 'cc'):
+                circ2 = self.curr[item2].coords
             if circ1 and circ2:
                 p1, p2 = line_tan_to_2circs(circ1, circ2)
                 cline = cnvrt_2pts_to_coef(p1, p2)
@@ -1333,10 +1329,8 @@ class Draw(AppShell.AppShell):
         elif self.obj_stack and not (self.float_stack or self.pt_stack):
             item = self.obj_stack[0][0]
             self.coords = None
-            if item in self.cc_dict:
-                self.coords = self.cc_dict[item]
-            elif item in self.gc_dict:
-                self.coords = self.gc_dict[item]
+            if self.curr[item].type in ('cc', 'gc'):
+                self.coords = self.curr[item].coords
             self.set_sel_mode('pnt')
             self.updateMessageBar(
                 'Enter relative radius or specify point on new circle')
@@ -2058,9 +2052,9 @@ class Draw(AppShell.AppShell):
                 tags = self.canvas.gettags(item)
                 dir = None
                 if 'c' in tags:
-                    dir = self.cl_dict[item]
+                    dir = self.curr[item].coords
                 elif 'g' in tags:
-                    p1, p2 = self.gl_dict[item]
+                    p1, p2 = self.curr[item].coords
                     dir = cnvrt_2pts_to_coef(p1, p2)
                 if dir:
                     self.dim_lin(p, dir)
@@ -2181,7 +2175,9 @@ class Draw(AppShell.AppShell):
         if self.obj_stack:
             item_tuple = self.obj_stack.pop()
             for item in item_tuple:
-                if item in self.curr.keys():
+                if item in self.curr:
+                    if self.curr[item].type is 'cl':
+                        self.cl_list.remove(self.curr[item].coords)
                     del self.curr[item]
                     self.canvas.delete(item)
                 else:
@@ -2195,12 +2191,10 @@ class Draw(AppShell.AppShell):
              
     def del_all_c(self):
         '''Delete All construction.'''
-        delete = [k for k, v in self.curr.items() if v.type is 'cl']
+        delete = [k for k, v in self.curr.items() if v.type in ('cl', 'cc')]
         for k in delete:
             del self.curr[k]
-        delete = [k for k, v in self.curr.items() if v.type is 'cc']
-        for k in delete:
-            del self.curr[k]
+            self.cl_list = []
         for item in self.canvas.find_withtag('c'):
             self.canvas.delete(item)
              
