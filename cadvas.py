@@ -446,29 +446,29 @@ class Draw(AppShell.AppShell):
     frameWidth      = 840
     frameHeight     = 600
     catchCntr = False
-    catch_pnt = None        # ID of (temporary) catch point
-    catch_radius = 5        # radius of catch region
-    catch_pnt_size = 5      # size of displayed catch point
-    rubber = None           # ID of (temporary) rubber element
-    rtext = None            # ID of (temporary) rubber text
-    sel_boxID = None        # ID of (temporary) selection box
-    op = ''                 # current CAD operation (create or modify)
+    catch_pnt = None    # ID of (temporary) catch point
+    catch_radius = 5    # radius of catch region
+    catch_pnt_size = 5  # size of displayed catch point
+    rubber = None       # ID of (temporary) rubber element
+    rtext = None        # ID of (temporary) rubber text
+    sel_boxID = None    # ID of (temporary) selection box
+    op = ''             # current CAD operation (create or modify)
     op_stack = []
     text_entry_enable = 0
     text = ''
-    curr = {}
+    curr = {}           # all entities in curr dwg {k=handle: v=entity}
     prev = {}
-    allow_list = 0          # enable/disable item selection in list mode
-    sel_mode = ''           # selection mode for screen picks
-    float_stack = []        # float values (unitless)
-    pt_stack = []           # points, in ECS (mm) units
-    obj_stack = []          # canvas items picked from the screen
-    sel_box_crnr = None     # first corner of selection box, if any
-    undo_stack = []         # list of dicts of sets of entities
-    redo_stack = []         # data popped off undo_stack
-    filename = None         # name of file currently loaded (or saved as)
-    dimgap = 10             # extension line gap (in canvas units) 
-    textsize = 10           # default text size
+    allow_list = 0      # enable/disable item selection in list mode
+    sel_mode = ''       # selection mode for screen picks
+    float_stack = []    # float values (unitless)
+    pt_stack = []       # points, in ECS (mm) units
+    obj_stack = []      # canvas items picked from the screen
+    sel_box_crnr = None # first corner of selection box, if any
+    undo_stack = []     # list of dicts of sets of entities
+    redo_stack = []     # data popped off undo_stack
+    filename = None     # name of file currently loaded (or saved as)
+    dimgap = 10         # extension line gap (in canvas units) 
+    textsize = 10       # default text size
     textstyle = 'Calibri'   # default text style
 
     shift_key_advice = ' (Use SHIFT key to select center of element)'
@@ -563,8 +563,10 @@ class Draw(AppShell.AppShell):
 
     def save(self, file):
 
-        drawlist = [{entity.type: entity.get_attribs()}
-                    for entity in self.curr.values()]
+        drawlist = []
+        for entity in self.curr.values():
+            drawlist.append({entity.type: entity.get_attribs()})
+
         fext = os.path.splitext(file)[-1]
         if fext == '.dxf':
             import dxf
@@ -579,7 +581,10 @@ class Draw(AppShell.AppShell):
             print("Save files of type {fext} not supported.")
 
     def load(self, file):
-        """Load CAD data from file."""
+        """Load CAD data from file.
+
+        Data is saved/loaded as a list of dicts, one dict for each
+        drawing entity, {key=entity_type: val=entity_attribs} """
         
         fext = os.path.splitext(file)[-1]
         if fext == '.dxf':
@@ -593,9 +598,13 @@ class Draw(AppShell.AppShell):
             print("Load files of type {fext} not supported.")
         for ent_dict in drawlist:
             if 'cl' in ent_dict:
-                pass
+                attribs = ent_dict['cl']
+                e = entities.CL(attribs)
+                self.cline_gen(e.coords)  # This method takes coords
             elif 'cc' in ent_dict:
-                pass
+                attribs = ent_dict['cc']
+                e = entities.CC(attribs)
+                self.cline_gen(e)
             elif 'gl' in ent_dict:
                 attribs = ent_dict['gl']
                 e = entities.GL(attribs)
@@ -608,11 +617,16 @@ class Draw(AppShell.AppShell):
                 attribs = ent_dict['ga']
                 e = entities.GA(attribs)
                 self.garc_gen(e)
+            elif 'dl' in ent_dict:
+                attribs = ent_dict['dl']
+                e = entities.DL(attribs)
+                self.dim_gen(e)
             elif 'tx' in ent_dict:
                 attribs = ent_dict['tx']
-                e = entities.TX(attribs)
-                handle = self.text_gen(e)
-                self.curr[handle] = e
+                tx = entities.TX(attribs)
+                handle = self.text_gen(tx)  # This method returns handle
+                self.curr[handle] = tx      # So need to add to self.curr
+            
         self.view_fit()
         self.save_delta()  # undo/redo thing
 
@@ -931,7 +945,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def cline_gen(self, cline, rubber=0):
-        '''Generate clines extending beyond the edge of the canvas.
+        '''Generate infinite length clines .
 
         cline coords (a,b,c) are in ECS (mm) values.'''
         
@@ -974,7 +988,6 @@ class Draw(AppShell.AppShell):
         
         cl_keylist = [k for k, v in self.curr.items() if v.type is 'cl']
         cl_list = [v.coords for v in self.curr.values() if v.type is 'cl']
-        print(cl_keylist)
         for handle in cl_keylist:
             self.canvas.delete(handle)
             del self.curr[handle]
@@ -1995,12 +2008,11 @@ class Draw(AppShell.AppShell):
         return dgidtag
         
 
-    def dim_gen(self, coords):
+    def dim_gen(self, dim_obj):
         """Generate dimension from DL object passed as arg."""
         
-        p1, p2, p3, c = coords 
-        dgid = self.dim_aligned(p1, p2, p3, c)
-        self.curr[dgid] = dl
+        dgid = self.dim_aligned(dim_obj)
+        self.curr[dgid] = dim_obj
 
     def regen_all_dims(self, event=None):
         """Delete all existing dimensions, and regenerate.
@@ -2041,9 +2053,9 @@ class Draw(AppShell.AppShell):
             p1 = self.pt_stack.pop()
             coords = (p1, p2, p3, d)
             attribs = (coords, dimcolor)
-            e = entities.DL(attribs)
-            dgid = self.dim_aligned(e)
-            self.curr[dgid] = e
+            dl = entities.DL(attribs)
+            dgid = self.dim_aligned(dl)
+            self.curr[dgid] = dl
 
     def dim_h(self, p=None):
         """Create a horizontal dimension"""
@@ -2084,6 +2096,7 @@ class Draw(AppShell.AppShell):
     def text_gen(self, tx, tag='t'):
         """Accept TX object and generate text, return handle."""
 
+        print(tx.coords)
         x, y = tx.coords
         text = tx.text
         style = tx.style

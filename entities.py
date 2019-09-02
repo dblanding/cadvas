@@ -11,34 +11,6 @@ DR Dimension Radial
 """
 
 
-class TX:
-    """Text object initialized with a tuple of attributes.
-
-    attribs = (coords, text, style, size, color)
-    """
-
-    def __init__(self, attribs):
-        self.coords, self.text, self.style, self.size, self.color = attribs
-        self.type = 'tx'
-        self.show = True
-
-    def __hash__(self):
-        return hash(self.get_attribs())
-    
-    def __eq__(self, other):
-        return (self.__class__ == other.__class__ and
-                self.coords == other.coords and
-                self.text == other.text and
-                self.style == other.style and
-                self.size == other.size and
-                self.color == other.color)
-
-    def __repr__(self):
-        return f"{self.type} object with coordinates {self.coords}"
-
-    def get_attribs(self):
-        return (self.coords, self.text, self.style, self.size, self.color)
-
 class CL:
     """Construction Line object initialized with a tuple of attributes.
 
@@ -168,6 +140,34 @@ class GA:
 
     def get_attribs(self):
         return (self.coords, self.color)
+
+class TX:
+    """Text object initialized with a tuple of attributes.
+
+    attribs = (coords, text, style, size, color)
+    """
+
+    def __init__(self, attribs):
+        self.coords, self.text, self.style, self.size, self.color = attribs
+        self.type = 'tx'
+        self.show = True
+
+    def __hash__(self):
+        return hash(self.get_attribs())
+    
+    def __eq__(self, other):
+        return (self.__class__ == other.__class__ and
+                self.coords == other.coords and
+                self.text == other.text and
+                self.style == other.style and
+                self.size == other.size and
+                self.color == other.color)
+
+    def __repr__(self):
+        return f"{self.type} object with coordinates {self.coords}"
+
+    def get_attribs(self):
+        return (self.coords, self.text, self.style, self.size, self.color)
 
 class DL:
     """Dimension Linear object initialized with a tuple of attributes.
