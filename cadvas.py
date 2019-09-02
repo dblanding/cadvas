@@ -35,8 +35,8 @@ import tkrpncalc
 import entities
 import pprint
 
-version = '0.4.0'
-date = 'July 2019'
+version = '0.5.0'
+date = 'Sept 2, 2019'
 
 geomcolor = 'white'     # color of geometry entities
 constrcolor = 'magenta' # color of construction entities
@@ -379,7 +379,7 @@ class Draw(AppShell.AppShell):
 
     Here's how it works:
     All CAD operations are initiated through a dispatch method, which after
-    first initalizing things, saves the name of the operation as self.op,
+    first initalizing things, and saving the name of the operation as self.op,
     then calls the method (whose name is saved in self.op). Within the
     operation method, the selection mode is set, determining what types of
     data (points or canvas items) are needed from the user and an appropriate
@@ -416,18 +416,20 @@ class Draw(AppShell.AppShell):
     discouraged, because the negative Y-values and negative angles can cause
     a lot of confusion, especially when calculating angles.
     
-    Keeping track of items on canvas:
-    In order to provide access to every drawing element (and its coordinates
-    in the ECS), each drawing element is stored in a dictionary with elements
-    of the same type, using key=itemID : value=ECS_coords. The itemID is an
-    integer assigned by the tk canvas. The coordinates depend on the type of
-    element (see info in each element-type subsection below.)
-
+    Keeping track of items on the canvas:
+    Drawing entities of various types, such as construction lines, geometry
+    lines, circles, etc are encapsulated in entity objects which save their
+    types, coordinates, etc as attributes. These objects are stored as values
+    in a dictionary, accessible by a unique key (integer) assigned by the
+    tk canvas.
+    
     File save/load:
-    For the purpose of being able to save and load drawings to/from file,
-    these dictionaries are assembled and saved to file using the pickle
-    module. A drawing is loaded by unpickling the file, and sending the
-    values from each dict to the appropriate method self.whatever_gen.
+    For the purpose of being able to save and load drawing elements to file,
+    these entity objects are disassembled and saved as individual dictionarys
+    of exactly one key/value pair. The key is the entity type and the value is
+    a tuple containing all the other attributes. When it comes time to reload
+    the data into objects, the key indicates the type of entity object to
+    create and the tuple of attributes is supplied as the parameter.
 
     Calculator:
     An RPN calculator can be launched by running many of the "Measure"
@@ -1050,10 +1052,9 @@ class Draw(AppShell.AppShell):
             self.cline_gen(cline)
 
     def hvcl(self, pnt=None):
-        """Create a horiz & vert construction line pair at a point.
-        Skip rubber lines since this needs two and there is currently only one."""
+        """Create a horizontal & vertical construction line pair at a point."""
 
-        message = 'Pick pt or enter coords for vertical & horizontal constr lines'
+        message = 'Pick pnt or enter coords for vertical & horizontal constr lines'
         message += self.shift_key_advice
         self.updateMessageBar(message)
         if self.pt_stack:
@@ -1062,7 +1063,7 @@ class Draw(AppShell.AppShell):
             self.cline_gen(angled_cline(p, 90))
 
     def acl(self, pnt=None):
-        """Create construction line thru a pt, at a specified angle."""
+        """Create construction line thru a point, at a specified angle."""
         
         if not self.pt_stack:
             message = 'Pick pnt for angled construction line or enter coordinates'
@@ -1284,7 +1285,7 @@ class Draw(AppShell.AppShell):
                 self.cline_gen(newline, rubber=1)
 
     def cltan1(self, p1=None):
-        '''Create a construction line through a pt, tangent to a circle.'''
+        '''Create a construction line through a point, tangent to a circle.'''
         
         if not self.obj_stack:
             self.updateMessageBar('Pick circle')
@@ -1399,7 +1400,7 @@ class Draw(AppShell.AppShell):
     def gline_gen(self, gl):
         """Create line segment from gl object. Store {id: obj} in self.curr.
 
-        This is provides access to line_gen using a gl object."""
+        This provides access to line_gen using a gl object."""
 
         coords, color = gl.get_attribs()
         tkid = self.line_gen(coords, color)
@@ -1520,6 +1521,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def gcirc_gen(self, gc, tag='g'):
+        """Create geometry circle from a GC object."""
 
         ctr, rad = gc.coords
         x, y = self.ep2cp(ctr)
@@ -1593,7 +1595,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def garc_gen(self, ga, tag='g'):
-        """Create arc from coords (in ECS)
+        """Create geometry arc from GA object (coords in ECS)
 
         pc  = arc center pt
         rad = radius of arc center in mm
@@ -1734,7 +1736,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def split(self, p1=None):
-        """Split straight line segment at a point."""
+        """Split 1 line segment into 2 (at a selected point.)"""
         
         if not self.obj_stack:
             self.set_sel_mode('items')
@@ -1760,7 +1762,7 @@ class Draw(AppShell.AppShell):
                     self.gline_gen(entities.GL(((p0, p2), geomcolor)))
 
     def join(self, p1=None):
-        """Join 2 adjacent line segments. (Need not be colinear.)"""
+        """Join 2 adjacent line segments into 1. """
         
         if not self.obj_stack:
             self.set_sel_mode('items')
@@ -1901,8 +1903,9 @@ class Draw(AppShell.AppShell):
     def rotate(self, p=None):
         """Move (or copy) selected geometry item(s) by rotating about a point.
 
-        To copy items, enter number of copies. Otherwise, item(s) will be moved
-        (not copied)."""
+        To copy items, enter number of copies.
+        Otherwise, item(s) will be moved (not copied)."""
+        
         if not self.obj_stack and not self.pt_stack and not self.float_stack:
             self.repeat = 0   # No copies. "move" mode is intended.
             self.set_sel_mode('items')
@@ -1966,15 +1969,15 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def dim_aligned(self, dimobj):
-        """Create a linear dimension on the canvas from a dimension object.
+        """Create a linear dimension from a linear dimension object.
         
         There are 5 individual components that make up a linear dimension:
         The text, 2 dimension lines, and 2 extension lines. Each component
         shares a tag which is unique to this 'group' of 5 components. This
-        permits all components to be found when any component is found. It
-        is intended to treat dimensions as 'disposable'. For example, to move
-        a dimension, just delete all 5 components, then regenerate them in
-        the new position."""
+        permits all components to be found when any component is selected
+        on the canvas. It is intended to treat dimensions as 'disposable'.
+        For example, to move a dimension, just delete all 5 components,
+        then regenerate them in the new position."""
 
         (p1, p2, p3, c), color = dimobj.get_attribs()
         dimdir = para_line(c, p3)
@@ -2019,6 +2022,7 @@ class Draw(AppShell.AppShell):
 
         This needs to be done after zoom because the dimension text does
         not change size with zoom."""
+        
         dimlist = [v.coords for v in self.curr.values() if v.type is 'dl']
         self.del_all_d()
         for coords in dimlist:
@@ -2059,14 +2063,17 @@ class Draw(AppShell.AppShell):
 
     def dim_h(self, p=None):
         """Create a horizontal dimension"""
+        
         self.dim_lin(p)
 
     def dim_v(self, p=None):
         """Create a vertical dimension"""
+        
         self.dim_lin(p, d=(1,0,0))
 
     def dim_par(self, p=None):
         """Create a dimension parallel to a selected line element."""
+        
         if not self.obj_stack:
             self.set_sel_mode('items')
             self.updateMessageBar(
@@ -2094,7 +2101,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     def text_gen(self, tx, tag='t'):
-        """Accept TX object and generate text, return handle."""
+        """Generate text from a TX object and return handle."""
 
         print(tx.coords)
         x, y = tx.coords
@@ -2126,6 +2133,7 @@ class Draw(AppShell.AppShell):
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
+        
         rc = rubbercolor
         if not self.text:
             self.text_entry_enable = 1
@@ -2196,6 +2204,7 @@ class Draw(AppShell.AppShell):
 
     def del_el(self, item_tuple=None):
         '''Delete individual elements.'''
+        
         self.set_sel_mode('items')
         self.allow_list = 1
         self.updateMessageBar('Pick element(s) to delete.')
@@ -2216,6 +2225,7 @@ class Draw(AppShell.AppShell):
              
     def del_all_c(self):
         '''Delete All construction.'''
+        
         delete = [k for k, v in self.curr.items() if v.type in ('cl', 'cc')]
         for k in delete:
             del self.curr[k]
@@ -2224,6 +2234,7 @@ class Draw(AppShell.AppShell):
              
     def del_all_g(self):
         '''Delete all geometry.'''
+        
         delete = [k for k, v in self.curr.items() if v.type is 'gl']
         for k in delete:
             del self.curr[k]
@@ -2238,6 +2249,7 @@ class Draw(AppShell.AppShell):
 
     def del_all_d(self):
         '''Delete all dimensions.'''
+        
         delete = [k for k, v in self.curr.items() if v.type is 'dl']
         for k in delete:
             del self.curr[k]
@@ -2246,6 +2258,7 @@ class Draw(AppShell.AppShell):
 
     def del_all_t(self):
         '''Delete all text.'''
+        
         delete = [k for k, v in self.curr.items() if v.type is 'tx']
         for k in delete:
             del self.curr[k]
@@ -2254,6 +2267,7 @@ class Draw(AppShell.AppShell):
 
     def del_all(self):
         '''Delete all.'''
+        
         self.curr.clear()
         self.canvas.delete(ALL)
         
@@ -2341,7 +2355,7 @@ class Draw(AppShell.AppShell):
 
     Typically, after clicking undo / redo buttons one or more times,
     the user will resume running operations that create, modify or
-    delete CAD data. Once CMD operations resume, the data on the redo
+    delete CAD data. Once these operations resume, the data on the redo
     stack will no longer be relevant and needs to be discarded.
     For now, there is a button under the edit menu that allows the user
     to manually clear the redo stack.
@@ -2408,10 +2422,10 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(k)
                 del self.curr[k]
 
-    def clear_redo(self):  # clear redo stack
+    def clear_redo(self):
         self.redo_stack.clear()
 
-    def clear_undo(self):  # clear undo stack
+    def clear_undo(self):
         self.undo_stack.clear()
 
     #=======================================================================
@@ -2420,6 +2434,7 @@ class Draw(AppShell.AppShell):
 
     def end(self):
         '''End current operation'''
+        
         if self.rubber:
             self.canvas.delete(self.rubber)
             self.rubber = None
@@ -2447,6 +2462,7 @@ class Draw(AppShell.AppShell):
 
     def enterfloat(self, str_value):
         """Receive string value (from calculator) and do the right thing."""
+        
         if str_value:
             val = float(str_value)
             self.float_stack.append(val)
@@ -2455,6 +2471,7 @@ class Draw(AppShell.AppShell):
 
     def keybrdEntry(self, event):
         """Store user entered values on stack.
+
         POINTS:
         points are stored in mm units in ECS on self.pt_stack.
         This is one of the places where unit scale is applied.
@@ -2465,8 +2482,8 @@ class Draw(AppShell.AppShell):
         whatever; it is not possible to know here how a float value will
         be used. It remains the responsibility of the using function to
         condition the float value appropriately by applying unitscale for
-        distances, etc.
-        """
+        distances, etc."""
+        
         if self.op:
             text = self.entry.get()
             self.entry.delete(0, len(text))
@@ -2487,8 +2504,8 @@ class Draw(AppShell.AppShell):
             eval(func)
 
     def lftClick(self, event):
-        '''Collect user screen picks and place on appropriate stack, then
-        call method named by self.op.
+        '''Place screen picks on appropriate stack, call method named by self.op.
+
         In "point" mode, put x,y coords of "catch point", if any, on point
         stack, otherwise put pointer x,y coords on stack.
         In "items" mode, put a tuple of selected items on "object stack".
@@ -2496,6 +2513,7 @@ class Draw(AppShell.AppShell):
         "catch radius", enter "box select mode" and look for objects that
         lie completely inside box defined by 1st and 2nd clicks.
         '''
+        
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         cr = self.catch_radius
@@ -2536,6 +2554,7 @@ class Draw(AppShell.AppShell):
 
     def rgtClick(self, event):
         '''Popup menu for view options.'''
+        
         if self.popup:
             self.popup.destroy()
         self.popup = Toplevel()
@@ -2565,6 +2584,7 @@ class Draw(AppShell.AppShell):
 
     def genCatchPnt(self, x, y, color='yellow', regen=0):
         '''Generate (or regenerate) a catch point at coordinates x, y.'''
+        
         ps = self.catch_pnt_size
         if regen:
             self.canvas.coords(self.catch_pnt, x-ps, y-ps, x+ps, y+ps)
@@ -2575,6 +2595,7 @@ class Draw(AppShell.AppShell):
 
     def setCC(self, event):
         '''Set center catch flag'''
+        
         if event.type == '2' and event.keysym == 'Shift_L':
             self.catchCntr = True
         else:
@@ -2584,6 +2605,7 @@ class Draw(AppShell.AppShell):
         '''Display a catch point (ID=self.catch_pnt) on a line within
         self.catch_radius of the cursor. Catch point should be "sticky"
         at midpoints, ends and intersections.'''
+        
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         
@@ -2606,7 +2628,7 @@ class Draw(AppShell.AppShell):
                 if self.catch_pnt:
                     self.canvas.delete(self.catch_pnt)
                     self.catch_pnt = 0
-            p1 = (x, y) # func wants canvas coords to make rubber element 
+            p1 = (x, y)  # func wants canvas coords to make rubber element 
             func = 'self.%s(%s)' % (self.op, p1)
             eval(func)
         elif self.sel_box_crnr:
