@@ -1001,13 +1001,10 @@ class Draw(AppShell.AppShell):
             self.cline_gen(cline)
 
     def ccirc_gen(self, cc, tag='c'):
+        """Create constr circle from a CC object. Save to self.curr."""
 
-        ctr, rad = cc.coords
-        x, y = self.ep2cp(ctr)
-        r = self.canvas.w2c_dx(rad)
-        handle = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                         outline=cc.color,
-                                         tags=tag)
+        coords, color = cc.get_attribs()
+        handle = self.circ_gen(coords, color, tag=tag)
         self.curr[handle] = cc
         self.canvas.tag_lower(handle)
 
@@ -1356,18 +1353,18 @@ class Draw(AppShell.AppShell):
                 pc, r0 = self.coords
                 ep = self.cp2ep(p1)
                 r = p2p_dist(pc, ep)
-                self.circ_gen((pc, r), rubber=1)
+                self.circ_builder((pc, r), rubber=1)
         elif self.coords and self.float_stack:
             pc, r0 = self.coords
             self.obj_stack.pop()
             r = self.float_stack.pop()*self.unitscale + r0
-            self.circ_gen((pc, r), constr=1)
+            self.circ_builder((pc, r), constr=1)
         elif self.coords and self.pt_stack:
             pc, r0 = self.coords
             self.obj_stack.pop()
             p = self.pt_stack.pop()
             r = p2p_dist(pc, p)
-            self.circ_gen((pc, r), constr=1)
+            self.circ_builder((pc, r), constr=1)
 
     def cc3p(self, p3=None):
         """Create a constr circle from 3 pts on circle."""
@@ -1385,13 +1382,13 @@ class Draw(AppShell.AppShell):
                 tuple = cr_from_3p(p1, p2, p3)
                 if tuple:
                     pc, r = tuple
-                    self.circ_gen((pc, r,), rubber=1)
+                    self.circ_builder((pc, r,), rubber=1)
         elif len(self.pt_stack) == 3:
             p3 = self.pt_stack.pop()
             p2 = self.pt_stack.pop()
             p1 = self.pt_stack.pop()
             pc, r = cr_from_3p(p1, p2, p3)
-            self.circ_gen((pc, r), constr=1)
+            self.circ_builder((pc, r), constr=1)
 
     #=======================================================================
     # Geometry
@@ -1524,18 +1521,28 @@ class Draw(AppShell.AppShell):
     # circles are defined by coordinates:       (pc, r)
     #=======================================================================
 
-    def gcirc_gen(self, gc, tag='g'):
-        """Create geometry circle from a GC object."""
+    def circ_gen(self, coords, color, tag):
+        """Draw a circle on the canvas and return the tkid handle.
 
-        ctr, rad = gc.coords
+        This low level method accesses the canvas directly & returns tkid.
+        The caller should save handle & entity_obj to self.curr if needed."""
+
+        ctr, rad = coords
         x, y = self.ep2cp(ctr)
         r = self.canvas.w2c_dx(rad)
         handle = self.canvas.create_oval(x-r, y-r, x+r, y+r,
-                                         outline=gc.color,
+                                         outline=color,
                                          tags=tag)
+        return handle
+
+    def gcirc_gen(self, gc, tag='g'):
+        """Create geometry circle from a GC object. Save to self.curr."""
+
+        coords, color = gc.get_attribs()
+        handle = self.circ_gen(coords, color, tag=tag)
         self.curr[handle] = gc
 
-    def circ_gen(self, coords, rubber=0, constr=0):
+    def circ_builder(self, coords, rubber=0, constr=0):
         """Create circle at center pc, radius r in engineering (mm) coords.
         Handle rubber circles, construction, and geom circles."""
         
@@ -1576,7 +1583,7 @@ class Draw(AppShell.AppShell):
             p1 = self.cp2ep(p1)
             r = p2p_dist(pc, p1)
             coords = (pc, r)
-            self.circ_gen(coords, rubber=1)
+            self.circ_builder(coords, rubber=1)
         elif len(self.pt_stack) > 1:
             p1 = self.pt_stack.pop()
             pc = self.pt_stack.pop()
@@ -1587,7 +1594,7 @@ class Draw(AppShell.AppShell):
             r = self.float_stack.pop()*self.unitscale
             finish = 1
         if finish:
-            self.circ_gen((pc, r), constr=constr)
+            self.circ_builder((pc, r), constr=constr)
 
     #=======================================================================
     # geometry arc parameters are stored in GA objects
