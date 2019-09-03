@@ -1979,8 +1979,8 @@ class Draw(AppShell.AppShell):
     # and p3 is the location of the center of the dimension text.
     #=======================================================================
 
-    def dim_aligned(self, dimobj):
-        """Create a linear dimension from a linear dimension object.
+    def dim_aligned(self, dim_obj):
+        """Create a linear dimension from dim_obj and return handle.
         
         There are 5 individual components that make up a linear dimension:
         The text, 2 dimension lines, and 2 extension lines. Each component
@@ -1990,7 +1990,7 @@ class Draw(AppShell.AppShell):
         For example, to move a dimension, just delete all 5 components,
         then regenerate them in the new position."""
 
-        (p1, p2, p3, c), color = dimobj.get_attribs()
+        (p1, p2, p3, c), color = dim_obj.get_attribs()
         dimdir = para_line(c, p3)
         p1b = proj_pt_on_line(dimdir, p1)
         p2b = proj_pt_on_line(dimdir, p2)
@@ -2023,7 +2023,7 @@ class Draw(AppShell.AppShell):
         
 
     def dim_gen(self, dim_obj):
-        """Generate dimension from DL object passed as arg."""
+        """Generate dimension from dim_obj and save to self.curr."""
         
         dgid = self.dim_aligned(dim_obj)
         self.curr[dgid] = dim_obj
