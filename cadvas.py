@@ -629,10 +629,8 @@ class Draw(AppShell.AppShell):
                 self.dim_gen(e)
             elif 'tx' in ent_dict:
                 attribs = ent_dict['tx']
-                tx = entities.TX(attribs)
-                handle = self.text_gen(tx)  # This method returns handle
-                self.curr[handle] = tx      # So need to add to self.curr
-            
+                e = entities.TX(attribs)
+                self.text_gen(e)
         self.view_fit()
         self.save_delta()  # undo/redo thing
 
@@ -2111,10 +2109,9 @@ class Draw(AppShell.AppShell):
     # style, size, color define the font.
     #=======================================================================
 
-    def text_gen(self, tx, tag='t'):
-        """Generate text from a TX object and return handle."""
+    def text_draw(self, tx, tag='t'):
+        """Draw text on canvas and return handle."""
 
-        print(tx.coords)
         x, y = tx.coords
         text = tx.text
         style = tx.style
@@ -2128,6 +2125,12 @@ class Draw(AppShell.AppShell):
                                          fill=color, font=font)
         return handle
 
+    def text_gen(self, tx, tag='t'):
+        """Generate text from a TX object and save to self.curr."""
+
+        handle = self.text_draw(tx, tag=tag)
+        self.curr[handle] = tx
+
     def regen_all_text(self, event=None):
         """Delete all existing text, clear tx_dict, and regenerate.
 
@@ -2139,8 +2142,7 @@ class Draw(AppShell.AppShell):
         self.del_all_t()
         for attribs in attribs_list:
             tx = entities.TX(attribs)
-            handle = self.text_gen(tx)
-            self.curr[handle] = tx
+            self.text_gen(tx)
 
     def text_enter(self, p=None):
         """Place new text on drawing."""
@@ -2162,8 +2164,7 @@ class Draw(AppShell.AppShell):
             attribs = (p, self.text, self.textstyle,
                        self.textsize, textcolor)
             tx = entities.TX(attribs)
-            handle = self.text_gen(tx)
-            self.curr[handle] = tx
+            self.text_gen(tx)
             self.text = None
             if self.rubber:
                 self.canvas.delete(self.rubber)
@@ -2188,7 +2189,7 @@ class Draw(AppShell.AppShell):
                         if self.rubber:
                             self.canvas.delete(self.rubber)
                         rubber_tx.coords = p
-                        self.rubber = self.text_gen(rubber_tx, tag='r')
+                        self.rubber = self.text_draw(rubber_tx, tag='r')
                     self.updateMessageBar('Pick new location for center of text')
                     self.set_sel_mode('pnt')
         elif self.pt_stack:
@@ -2200,7 +2201,7 @@ class Draw(AppShell.AppShell):
                 attribs[0] = newpoint
                 attribs = tuple(attribs)
                 new_tx = entities.TX(attribs)
-                new_handle = self.text_gen(new_tx)
+                new_handle = self.text_draw(new_tx)
                 self.curr[new_handle] = new_tx
                 del self.curr[handle]
                 self.canvas.delete(handle)
