@@ -986,11 +986,11 @@ class Draw(AppShell.AppShell):
     def regen_all_cl(self, event=None):
         """Delete existing clines, remove them from self.curr, and regenerate
 
-        all clines in cl_list. This needs to be done after pan or zoom because
-        the "infinite" length clines are not really infinite, they just hang off
-        the edge a little bit. Any clines that are outside the view area do
-        not get listed in cl_dict, therefore cl_list is needed so these lines
-        don't get lost."""
+        This needs to be done after pan or zoom because the "infinite" length
+        clines are not really infinite, they just hang off the edge a bit. So
+        when zooming out, new clines need to be generated so they extend over
+        the full canvas. Also, when zooming in, some clines are completely off
+        the canvas, so we need a way to keep them from getting lost."""
         
         cl_keylist = [k for k, v in self.curr.items() if v.type is 'cl']
         cl_list = [v.coords for v in self.curr.values() if v.type is 'cl']
@@ -1401,15 +1401,6 @@ class Draw(AppShell.AppShell):
     #
     #=======================================================================
 
-    def gline_gen(self, gl):
-        """Create line segment from gl object. Store {id: obj} in self.curr.
-
-        This provides access to line_gen using a gl object."""
-
-        coords, color = gl.get_attribs()
-        tkid = self.line_gen(coords, color)
-        self.curr[tkid] = gl
-        
     def line_gen(self, coords, color, arrow=None, tag='g'):
         """Create and display line segment between two pts. Return ID.
 
@@ -1423,6 +1414,15 @@ class Draw(AppShell.AppShell):
                                        fill=color, tags=tag, arrow=arrow)
         return tkid
 
+    def gline_gen(self, gl):
+        """Create line segment from gl object. Store {id: obj} in self.curr.
+
+        This provides access to line_gen using a gl object."""
+
+        coords, color = gl.get_attribs()
+        tkid = self.line_gen(coords, color)
+        self.curr[tkid] = gl
+        
     def line(self, p1=None):
         '''Create line segment between 2 points. Enable 'rubber line' mode'''
         
