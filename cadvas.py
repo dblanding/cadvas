@@ -420,25 +420,29 @@ class Draw(AppShell.AppShell):
     Drawing entities of various types, such as construction lines, geometry
     lines, circles, etc are encapsulated in entity objects which save their
     types, coordinates, etc as attributes. These objects are stored as values
-    in a dictionary, accessible by a unique key (integer) assigned by the
-    tk canvas.
+    in a dictionary, accessible by a unique key (integer) which has been
+    assigned by the tk canvas. A single dictionary contains all the drawing
+    entities in the current display.
     
     File save/load:
-    For the purpose of being able to save and load drawing elements to file,
-    these entity objects are disassembled and saved as individual dictionarys
+    For the purpose of being able to save and load the current display to file,
+    these entity objects are disassembled and saved as individual dictionaries
     of exactly one key/value pair. The key is the entity type and the value is
-    a tuple containing all the other attributes. When it comes time to reload
-    the data into objects, the key indicates the type of entity object to
-    create and the tuple of attributes is supplied as the parameter.
+    a tuple containing all the other attributes of the entity.
+    When it comes time to reload the data, the original objects are first
+    reassembled (the key determines the type of entity object to create and the
+    tuple of attributes is supplied as the parameter), then the new objects are
+    submitted to type-specific generator methods which display them on the
+    canvas and use the canvas generated handle to rebuild the dictionary of
+    displayed entities. 
 
     Calculator:
     An RPN calculator can be launched by running many of the "Measure"
-    functions. When measurements are made, the values are sent to the
-    x-register of the calculator. Also, if an operation is prompting the
-    user for a float value, the buttons to the left of the calculator
-    registers will cause the associated value to be sent to the CAD
-    operation.
-    """
+    functions. When measurements are made, values are sent to the x-register
+    of the calculator. Also, if an operation is prompting the user to enter a
+    float value, the buttons to the left of the calculator registers will send
+    the associated value to the CAD operation."""
+    
     usecommandarea  = 0
     appversion      = version
     appname         = 'CADvas'
