@@ -2178,36 +2178,42 @@ class Draw(AppShell.AppShell):
             self.set_sel_mode('items')
             self.updateMessageBar('Select text to move.')
         elif not self.pt_stack:
-            for item in self.obj_stack:
-                for handle in item:
-                    if handle in self.curr:
-                        rubber_tx = self.curr[handle]
-                    if p:  # mouse coordinates supplied by Zooming
-                        x, y = p
-                        u, v = self.cp2ep((x, y))
-                        p = (u, v)
-                        if self.rubber:
-                            self.canvas.delete(self.rubber)
-                        rubber_tx.coords = p
-                        self.rubber = self.text_draw(rubber_tx, tag='r')
-                    self.updateMessageBar('Pick new location for center of text')
-                    self.set_sel_mode('pnt')
+            if not self.rubber:
+                for item_tuple in self.obj_stack:
+                    for item in item_tuple:
+                        if 't' in self.canvas.gettags(item):
+                            if item in self.curr:
+                                old_tx = self.curr[item]
+                                old_attribs = old_tx.get_attribs()
+                                self.rubber_tx = entities.TX(old_attribs)
+                                self.rubber = self.text_draw(self.rubber_tx,
+                                                             tag='r')
+            if self.rubber:
+                self.canvas.delete(self.rubber)
+            if p:  # mouse coordinates supplied by Zooming
+                p = self.cp2ep(p)  # coords of p are in CCS
+                self.rubber_tx.coords = p
+            self.rubber = self.text_draw(self.rubber_tx, tag='r')
+            self.updateMessageBar('Pick new location for center of text')
+            self.set_sel_mode('pnt')
         elif self.pt_stack:
             newpoint = self.pt_stack.pop()
             handle = self.obj_stack.pop()[0]
             if handle in self.curr:
                 tx = self.curr[handle]
+                print(f'Old coords: {tx.coords}')
                 attribs = list(tx.get_attribs())
                 attribs[0] = newpoint
                 attribs = tuple(attribs)
                 new_tx = entities.TX(attribs)
-                new_handle = self.text_draw(new_tx)
-                self.curr[new_handle] = new_tx
+                print(f'New coords: {new_tx.coords}')
+                self.text_gen(new_tx)
                 del self.curr[handle]
                 self.canvas.delete(handle)
             if self.rubber:
                 self.canvas.delete(self.rubber)
                 self.rubber = None
+                del self.rubber_tx
             self.regen_all_text()
             
     #=======================================================================
@@ -2331,7 +2337,7 @@ class Draw(AppShell.AppShell):
 
     1. difference detected between curr and prev.
     2. diff (delta) pushed onto undo_stack.
-    3. self.prev overwritten by self.curr.
+    3. copy of curr saved to prev.
     
     
     The undo & redo buttons work as shown in the diagram below.
@@ -2339,8 +2345,9 @@ class Draw(AppShell.AppShell):
      ____________     2      __________ 3       1  ______________
     | redo stack |   <--    |   Curr   |    <--   |  Undo stack  |
     |____________|          |__________|          |______________|
-
-
+                                 ||
+                                 ||4
+                                 \/
                              __________
                             |   Prev   |
                             |__________|
@@ -2349,13 +2356,15 @@ class Draw(AppShell.AppShell):
     1. undo_data is popped off the undo_stack.
     2. undo data is pushed onto the redo_stack.
     3. curr is updated with undo_data.
+    4. copy of curr is save to prev.
 
 
      ____________ 1       3  __________      2     ______________
     | redo stack |   -->    |   Curr   |    -->   |  Undo stack  |
     |____________|          |__________|          |______________|
-
-
+                                 ||
+                                 ||4
+                                 \/
                              __________
                             |   Prev   |
                             |__________|
@@ -2364,6 +2373,7 @@ class Draw(AppShell.AppShell):
     1. redo_data is popped off the redo_stack.
     2. redo data is pushed onto the undo_stack.
     3. curr is updated with redo_data.
+    4. copy of curr is saved to prev.
 
     Typically, after clicking undo / redo buttons one or more times,
     the user will resume running operations that create, modify or
@@ -2395,6 +2405,7 @@ class Draw(AppShell.AppShell):
                 self.rem_draw(item)
             for item in undo_data['-']:
                 self.add_draw(item)
+            self.prev = self.curr.copy()
         else:
             print("No more Undo steps available.")
 
@@ -2408,6 +2419,7 @@ class Draw(AppShell.AppShell):
                 self.add_draw(item)
             for item in redo_data['-']:
                 self.rem_draw(item)
+            self.prev = self.curr.copy()
         else:
             print("No more Redo steps available.")
 
@@ -2415,8 +2427,7 @@ class Draw(AppShell.AppShell):
         """Add entity to current drawing."""
 
         if entity.type is 'tx':
-            handle = self.text_gen(entity)
-            self.curr[handle] = entity
+            self.text_gen(entity)
         elif entity.type is 'gl':
             self.gline_gen(entity)
         elif entity.type is 'gc':
