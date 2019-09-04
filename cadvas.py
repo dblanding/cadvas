@@ -1330,7 +1330,7 @@ class Draw(AppShell.AppShell):
         """Create constr circle from a CC object. Save to self.curr."""
 
         coords, color = cc.get_attribs()
-        handle = self.circ_gen(coords, color, tag=tag)
+        handle = self.circ_draw(coords, color, tag=tag)
         self.curr[handle] = cc
         self.canvas.tag_lower(handle)
 
@@ -1404,7 +1404,7 @@ class Draw(AppShell.AppShell):
     #
     #=======================================================================
 
-    def line_gen(self, coords, color, arrow=None, tag='g'):
+    def line_draw(self, coords, color, arrow=None, tag='g'):
         """Create and display line segment between two pts. Return ID.
 
         This is a low level method that accesses the canvas directly &
@@ -1423,7 +1423,7 @@ class Draw(AppShell.AppShell):
         This provides access to line_gen using a gl object."""
 
         coords, color = gl.get_attribs()
-        tkid = self.line_gen(coords, color)
+        tkid = self.line_draw(coords, color)
         self.curr[tkid] = gl
         
     def line(self, p1=None):
@@ -1527,7 +1527,7 @@ class Draw(AppShell.AppShell):
     # circles are defined by coordinates:       (pc, r)
     #=======================================================================
 
-    def circ_gen(self, coords, color, tag):
+    def circ_draw(self, coords, color, tag):
         """Draw a circle on the canvas and return the tkid handle.
 
         This low level method accesses the canvas directly & returns tkid.
@@ -1545,11 +1545,12 @@ class Draw(AppShell.AppShell):
         """Create geometry circle from a GC object. Save to self.curr."""
 
         coords, color = gc.get_attribs()
-        handle = self.circ_gen(coords, color, tag=tag)
+        handle = self.circ_draw(coords, color, tag=tag)
         self.curr[handle] = gc
 
     def circ_builder(self, coords, rubber=0, constr=0):
         """Create circle at center pc, radius r in engineering (mm) coords.
+
         Handle rubber circles, construction, and geom circles."""
         
         ctr, rad = coords       # ECS
@@ -1985,7 +1986,7 @@ class Draw(AppShell.AppShell):
     # and p3 is the location of the center of the dimension text.
     #=======================================================================
 
-    def dim_aligned(self, dim_obj):
+    def dim_draw(self, dim_obj):
         """Create a linear dimension from dim_obj and return handle.
         
         There are 5 individual components that make up a linear dimension:
@@ -2013,8 +2014,8 @@ class Draw(AppShell.AppShell):
         innerpts = cline_box_intrsctn(dimdir, (xa, ya, xb, yb))
         ip1 = closer(p1b, innerpts[0], innerpts[1])
         ip2 = closer(p2b, innerpts[0], innerpts[1])
-        self.line_gen((ip1, p1b), color=color, tag=('d', dgidtag), arrow=LAST)
-        self.line_gen((ip2, p2b), color=color, tag=('d', dgidtag), arrow=LAST)
+        self.line_draw((ip1, p1b), color=color, tag=('d', dgidtag), arrow=LAST)
+        self.line_draw((ip2, p2b), color=color, tag=('d', dgidtag), arrow=LAST)
         # create extension lines
         # make ext line gap appear same size irrespective of zoom
         gap = self.canvas.c2w_dx(self.dimgap)
@@ -2023,15 +2024,15 @@ class Draw(AppShell.AppShell):
         p1c = extendline(p1, p1b, gap)
         p2c = extendline(p2, p2b, gap)
         if p1a and p2a and p1c and p2c:
-            self.line_gen((p1a, p1c), color=color, tag=('d', dgidtag))
-            self.line_gen((p2a, p2c), color=color, tag=('d', dgidtag))
+            self.line_draw((p1a, p1c), color=color, tag=('d', dgidtag))
+            self.line_draw((p2a, p2c), color=color, tag=('d', dgidtag))
         return dgidtag
         
 
     def dim_gen(self, dim_obj):
         """Generate dimension from dim_obj and save to self.curr."""
         
-        dgid = self.dim_aligned(dim_obj)
+        dgid = self.dim_draw(dim_obj)
         self.curr[dgid] = dim_obj
 
     def regen_all_dims(self, event=None):
@@ -2064,7 +2065,7 @@ class Draw(AppShell.AppShell):
                         self.canvas.delete(each)
                 att = ((p1, p2, p3, d), rc)
                 rubber_ent = entities.DL(att)
-                self.rubber = self.dim_aligned(rubber_ent)
+                self.rubber = self.dim_draw(rubber_ent)
         elif len(self.pt_stack) == 3:
             if self.rubber:
                 for each in self.canvas.find_withtag(self.rubber):
@@ -2075,7 +2076,7 @@ class Draw(AppShell.AppShell):
             coords = (p1, p2, p3, d)
             attribs = (coords, dimcolor)
             dl = entities.DL(attribs)
-            dgid = self.dim_aligned(dl)
+            dgid = self.dim_draw(dl)
             self.curr[dgid] = dl
 
     def dim_h(self, p=None):
