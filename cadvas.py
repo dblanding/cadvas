@@ -1334,6 +1334,12 @@ class Draw(AppShell.AppShell):
         self.curr[handle] = cc
         self.canvas.tag_lower(handle)
 
+    def ccirc(self, p1=None):
+        '''Create a construction circle from center point and
+        perimeter point or radius.'''
+        
+        self.circ(p1=p1, constr=1)
+
     def cccirc(self, p1=None):
         '''Create a construction circle concentric to an existing circle,
         at a "relative" radius.'''
@@ -1571,6 +1577,31 @@ class Draw(AppShell.AppShell):
                 self.canvas.delete(self.rubber)
                 self.rubber = None
             
+    def circ(self, p1=None, constr=0):
+        '''Create a circle from center pnt and perimeter pnt or radius.'''
+        
+        finish = 0
+        if not self.pt_stack:
+            self.updateMessageBar('Pick center of circle or enter coords')
+        elif len(self.pt_stack) == 1 and p1 and not self.float_stack:
+            self.updateMessageBar('Specify point on circle or radius')
+            pc = self.pt_stack[0]
+            p1 = self.cp2ep(p1)
+            r = p2p_dist(pc, p1)
+            coords = (pc, r)
+            self.circ_builder(coords, rubber=1)
+        elif len(self.pt_stack) > 1:
+            p1 = self.pt_stack.pop()
+            pc = self.pt_stack.pop()
+            r = p2p_dist(pc, p1)
+            finish = 1
+        elif self.pt_stack and self.float_stack:
+            pc = self.pt_stack.pop()
+            r = self.float_stack.pop()*self.unitscale
+            finish = 1
+        if finish:
+            self.circ_builder((pc, r), constr=constr)
+
     #=======================================================================
     # geometry arc parameters are stored in GA objects
     # arcs are defined by coordinates:  (pc, r, a0, a1)
