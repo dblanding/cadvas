@@ -1901,7 +1901,7 @@ class Draw(AppShell.AppShell):
                 elif item.type is 'gc':
                     pnts, _ = item.get_attribs()
                     for x in range(repeat):
-                        pnts = (add_pt(e[0], dp), pnts[1])
+                        pnts = (add_pt(pnts[0], dp), pnts[1])
                         gc = entities.GC((pnts, geomcolor))
                         self.gcirc_gen(gc)
                 elif item.type is 'ga':
