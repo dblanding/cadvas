@@ -2394,7 +2394,7 @@ class Draw(AppShell.AppShell):
 
     def save_delta(self):
         """After a drawing change, save deltas on undo stack."""
-        
+
         if self.curr != self.prev:
             plus = set(self.curr.values()) - set(self.prev.values())
             minus = set(self.prev.values()) - set(self.curr.values())
@@ -2405,6 +2405,7 @@ class Draw(AppShell.AppShell):
     def undo(self):
         """Pop data off undo, push onto redo, and update curr."""
         
+        self.end()
         if self.undo_stack:
             undo_data = self.undo_stack.pop()
             self.redo_stack.append(undo_data)
