@@ -998,14 +998,6 @@ class Draw(AppShell.AppShell):
         for cline in cl_list:
             self.cline_gen(cline)
 
-    def ccirc_gen(self, cc, tag='c'):
-        """Create constr circle from a CC object. Save to self.curr."""
-
-        coords, color = cc.get_attribs()
-        handle = self.circ_gen(coords, color, tag=tag)
-        self.curr[handle] = cc
-        self.canvas.tag_lower(handle)
-
     def hcl(self, pnt=None):
         """Create horizontal construction line from one point or y value."""
 
@@ -1418,7 +1410,7 @@ class Draw(AppShell.AppShell):
         return tkid
 
     def gline_gen(self, gl):
-        """Create line segment from gl object. Store {id: obj} in self.curr.
+        """Create line segment from gl object. Store {ID: obj} in self.curr.
 
         This provides access to line_gen using a gl object."""
 
@@ -2302,7 +2294,7 @@ class Draw(AppShell.AppShell):
     #=======================================================================
 
     """
-    When drawing entities are generated and displayed, their parameters are
+    When drawing entities are created and displayed, their parameters are
     stored in objects that are specific to their 'type'. The objects which
     encapsulate them each have a .type attribute mirroring the type of the
     entity being encapsulated. The types are as follows:
@@ -2316,9 +2308,9 @@ class Draw(AppShell.AppShell):
     'tx'    text
 
     Information about all the entities currently in the drawing is kept in a
-    dictionary named self.curr, whose values are the objects encapsulating each
-    entity and whose keys are the canvas generated handles associated with each
-    entity.
+    dictionary named self.curr, whose values are the entity objects
+    encapsulating each entity and whose keys are the canvas generated handles
+    associated with each entity.
     In order to implement undo and redo, it is neccesary to detect whenever
     there is a change in self.curr. To do this, a copy of self.curr (named
     self.prev) is maintained. Whenever a CAD operation ends, the save_delta()
@@ -2385,7 +2377,7 @@ class Draw(AppShell.AppShell):
     Typically, after clicking undo / redo buttons one or more times,
     the user will resume running operations that create, modify or
     delete CAD data. Once these operations resume, the data on the redo
-    stack will no longer be relevant and needs to be discarded.
+    stack may no longer be relevant and ought to be discarded.
     For now, there is a button under the edit menu that allows the user
     to manually clear the redo stack.
 
@@ -2403,7 +2395,7 @@ class Draw(AppShell.AppShell):
             self.prev = self.curr.copy()
 
     def undo(self):
-        """Pop data off undo, push onto redo, and update curr."""
+        """Pop data off undo, push onto redo, update curr, copy to prev."""
         
         self.end()
         if self.undo_stack:
@@ -2418,7 +2410,7 @@ class Draw(AppShell.AppShell):
             print("No more Undo steps available.")
 
     def redo(self):
-        """Pop data off redo, push onto undo, and update curr."""
+        """Pop data off redo, push onto undo, update curr, copy to prev."""
 
         if self.redo_stack:
             redo_data = self.redo_stack.pop()
