@@ -2434,7 +2434,7 @@ class Draw(AppShell.AppShell):
         """Add entity to current drawing."""
 
         if entity.type is 'cl':
-            self.cl_gen(entity.coords)  # This one takes coords
+            self.cline_gen(entity.coords)  # This one takes coords
         elif entity.type is 'cc':
             self.ccirc_gen(entity)
         elif entity.type is 'gl':
