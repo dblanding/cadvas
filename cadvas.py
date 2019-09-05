@@ -1963,7 +1963,7 @@ class Draw(AppShell.AppShell):
                         pnts = (rotate_pt(pnts[0], A, ctr), pnts[1])
                         gc = entities.GC((pnts, geomcolor))
                         self.gcirc_gen(gc)
-                elif itemtype is 'ga':
+                elif item.type is 'ga':
                     pnts, _ = item.get_attribs()
                     for x in range(self.repeat):
                         pnts = (rotate_pt(pnts[0], A, ctr),
