@@ -654,7 +654,7 @@ class Draw(AppShell.AppShell):
             self.regen()
 
     def regen(self, event=None):
-        #self.regen_all_cl()
+        self.regen_all_cl()
         #self.regen_all_dims()
         self.regen_all_text()
 
