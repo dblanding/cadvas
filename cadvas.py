@@ -35,8 +35,8 @@ import tkrpncalc
 import entities
 import pprint
 
-version = '0.5.0'
-date = 'Sept 2, 2019'
+version = '0.5.1'
+date = 'Sept 5, 2019'
 
 geomcolor = 'white'     # color of geometry entities
 constrcolor = 'magenta' # color of construction entities
@@ -388,7 +388,7 @@ class Draw(AppShell.AppShell):
     the mouse on the screen, or enters data using the keyboard or calculator.
     Event handlers detect user input, save the data onto the appropriate
     stack (point_stack, float_stack, or object_stack) and then call the
-    'self.op' method again. Some operations, may allow items to be "box
+    'self.op' method again. Some operations may allow items to be "box
     selected" or assembled into a list. If an operation allows a list of
     items to be selected, the RMB popup menu will include 2 additional
     buttons: "Start list" and "End list".
@@ -431,7 +431,7 @@ class Draw(AppShell.AppShell):
     a tuple containing all the other attributes of the entity.
     When it comes time to reload the data, the original objects are first
     reassembled (the key determines the type of entity object to create and the
-    tuple of attributes is supplied as the parameter), then the new objects are
+    tuple of attributes is supplied as the argument), then the new objects are
     submitted to type-specific generator methods which display them on the
     canvas and use the canvas generated handle to rebuild the dictionary of
     displayed entities. 
