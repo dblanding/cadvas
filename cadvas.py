@@ -1948,7 +1948,7 @@ class Draw(AppShell.AppShell):
             delete_original = False
             if not self.repeat:  # move, (not copy)
                 delete_original = True
-                repeat = 1
+                self.repeat = 1
             for item in items:
                 if item.type is 'gl':
                     pnts, _ = item.get_attribs()
