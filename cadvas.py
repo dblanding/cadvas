@@ -2033,10 +2033,10 @@ class Draw(AppShell.AppShell):
         This needs to be done after zoom because the dimension text does
         not change size with zoom."""
         
-        dimlist = [v.coords for v in self.curr.values() if v.type is 'dl']
+        dimlist = [v for v in self.curr.values() if v.type is 'dl']
         self.del_all_d()
-        for coords in dimlist:
-            self.dim_gen(coords)
+        for ent_obj in dimlist:
+            self.dim_gen(ent_obj)
 
     def dim_lin(self, p=None, d=(0,1,0)):
         """Manually create a linear dimension obj. Add to self.curr."""
