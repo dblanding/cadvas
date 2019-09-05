@@ -2433,14 +2433,20 @@ class Draw(AppShell.AppShell):
     def add_draw(self, entity):
         """Add entity to current drawing."""
 
-        if entity.type is 'tx':
-            self.text_gen(entity)
+        if entity.type is 'cl':
+            self.cl_gen(entity.coords)  # This one takes coords
+        elif entity.type is 'cc':
+            self.ccirc_gen(entity)
         elif entity.type is 'gl':
             self.gline_gen(entity)
         elif entity.type is 'gc':
             self.gcirc_gen(entity)
         elif entity.type is 'ga':
             self.garc_gen(entity)
+        elif entity.type is 'dl':
+            self.dim_gen(entity)
+        elif entity.type is 'tx':
+            self.text_gen(entity)
         
 
     def rem_draw(self, entity):
