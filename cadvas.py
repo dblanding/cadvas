@@ -32,6 +32,7 @@ from   zooming import Zooming
 import AppShell
 from   toolbarbutton import ToolBarButton
 import tkrpncalc
+import txtdialog
 import entities
 import pprint
 
@@ -484,6 +485,7 @@ class Draw(AppShell.AppShell):
     units = 'mm'
     unitscale = unit_dict[units]
     calculator = None
+    txtdialog = None
     popup = None
     
     #=======================================================================
@@ -681,6 +683,23 @@ class Draw(AppShell.AppShell):
             self.launch_calc()
             self.calculator.putx(dist)
 
+    def txt_params(self, obj=None):
+        self.op = 'txt_params'
+        if not self.obj_stack:
+            self.updateMessageBar('Pick text to modify')
+            self.set_sel_mode('items')
+        elif self.obj_stack:
+            handle = self.obj_stack.pop()[0]
+            print(str(handle))
+            ent = self.curr[handle]
+            print(ent)
+            if ent.type is 'tx':
+                self.launch_txtdialog()
+                self.txtdialog.putx(ent.text)
+                self.txtdialog.puty(ent.color)
+                self.txtdialog.putz(ent.size)
+                self.txtdialog.putt(ent.style)
+
     def itemcoords(self, obj=None):
         """Print coordinates (in ECS) of selected element."""
         if not self.obj_stack:
@@ -722,6 +741,11 @@ class Draw(AppShell.AppShell):
         if not self.calculator:
             self.calculator = tkrpncalc.Calculator(self)
             self.calculator.geometry('+800+50')
+
+    def launch_txtdialog(self):
+        if not self.txtdialog:
+            self.txtdialog = txtdialog.TxtDialog(self)
+            self.txtdialog.geometry('+1000+500')
 
     #=======================================================================
     # GUI configuration
@@ -814,6 +838,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Text', 'command', 'Move text',
                                  label='Move text',
                                  command=lambda k='text_move':self.dispatch(k))
+        self.menuBar.addmenuitem('Text', 'command', 'Text Params',
+                                 label='txt_Params',
+                                 command=self.txt_params)
         self.menuBar.addmenu('Delete', 'Delete drawing elements')
         self.menuBar.addmenuitem('Delete', 'command',
                                  'Delete individual element',
