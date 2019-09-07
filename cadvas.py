@@ -838,8 +838,8 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Text', 'command', 'Move text',
                                  label='Move text',
                                  command=lambda k='text_move':self.dispatch(k))
-        self.menuBar.addmenuitem('Text', 'command', 'Text Params',
-                                 label='txt_Params',
+        self.menuBar.addmenuitem('Text', 'command', 'Edit Text',
+                                 label='Edit text',
                                  command=self.txt_params)
         self.menuBar.addmenu('Delete', 'Delete drawing elements')
         self.menuBar.addmenuitem('Delete', 'command',
@@ -871,6 +871,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Debug', 'command', 'Show Redo',
                                  label='Show Redo',
                                  command=lambda k='show_redo':self.dispatch(k))
+        self.menuBar.addmenuitem('Debug', 'command', 'Show ZoomScale',
+                                 label='Show Zoom Scale',
+                                 command=lambda k='show_zoomscale':self.dispatch(k))
         
 
     def createTools(self):
@@ -964,6 +967,11 @@ class Draw(AppShell.AppShell):
         
     def show_redo(self):
         pprint.pprint(self.redo_stack)
+        self.end()
+
+    def show_zoomscale(self):
+        zoom_scale = self.canvas.scl.x
+        pprint.pprint(zoom_scale)
         self.end()
 
     #=======================================================================
@@ -2414,12 +2422,13 @@ class Draw(AppShell.AppShell):
     def save_delta(self):
         """After a drawing change, save deltas on undo stack."""
 
-        if self.curr != self.prev:
+        if self.curr.values() != self.prev.values():
             plus = set(self.curr.values()) - set(self.prev.values())
             minus = set(self.prev.values()) - set(self.curr.values())
-            delta = {'+': plus, '-': minus}
-            self.undo_stack.append(delta)
-            self.prev = self.curr.copy()
+            if plus or minus:  # Only save if something changed
+                delta = {'+': plus, '-': minus}
+                self.undo_stack.append(delta)
+                self.prev = self.curr.copy()
 
     def undo(self):
         """Pop data off undo, push onto redo, update curr, copy to prev."""
