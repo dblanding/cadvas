@@ -477,6 +477,7 @@ class Draw(AppShell.AppShell):
     dimgap = 10         # extension line gap (in canvas units) 
     textsize = 10       # default text size
     textstyle = 'Calibri'   # default text style
+    modified_text_object = None
 
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
@@ -631,6 +632,7 @@ class Draw(AppShell.AppShell):
                 self.dim_gen(e)
             elif 'tx' in ent_dict:
                 attribs = ent_dict['tx']
+                print(attribs)
                 e = entities.TX(attribs)
                 self.text_gen(e)
         self.view_fit()
@@ -683,15 +685,15 @@ class Draw(AppShell.AppShell):
             self.launch_calc()
             self.calculator.putx(dist)
 
-    def txt_params(self, obj=None):
+    def txt_params(self):
         self.op = 'txt_params'
-        if not self.obj_stack:
+        if not self.obj_stack and not self.modified_text_object:
             self.updateMessageBar('Pick text to modify')
             self.set_sel_mode('items')
-        elif self.obj_stack:
-            handle = self.obj_stack.pop()[0]
-            print(str(handle))
-            ent = self.curr[handle]
+        elif self.obj_stack and not self.modified_text_object:
+            self.handle = self.obj_stack.pop()[0]
+            print(str(self.handle))
+            ent = self.curr[self.handle]
             print(ent)
             if ent.type is 'tx':
                 self.launch_txtdialog()
@@ -699,6 +701,15 @@ class Draw(AppShell.AppShell):
                 self.txtdialog.puty(ent.color)
                 self.txtdialog.putz(ent.size)
                 self.txtdialog.putt(ent.style)
+                self.txtdialog.coords = ent.coords
+        elif self.modified_text_object:
+            print(self.modified_text_object.get_attribs())
+            self.canvas.delete(self.handle)
+            del self.curr[self.handle]
+            del self.handle
+            self.text_gen(self.modified_text_object)
+            self.modified_text_object = None
+            self.regen()
 
     def itemcoords(self, obj=None):
         """Print coordinates (in ECS) of selected element."""
@@ -2152,10 +2163,10 @@ class Draw(AppShell.AppShell):
         text = tx.text
         style = tx.style
         size = tx.size
-        color =tx. color
+        color = tx.color
         u, v = self.ep2cp((x, y))
         zoom_scale = self.canvas.scl.x
-        zoomed_font_size = int(size * zoom_scale)
+        zoomed_font_size = int(size * zoom_scale)  # tk canvas requires int
         font = (style, zoomed_font_size)
         handle = self.canvas.create_text(u, v, text=text, tags=tag,
                                          fill=color, font=font)
