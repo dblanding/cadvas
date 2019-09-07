@@ -477,6 +477,7 @@ class Draw(AppShell.AppShell):
     dimgap = 10         # extension line gap (in canvas units) 
     textsize = 10       # default text size
     textstyle = 'Calibri'   # default text style
+    textcolor = textcolor
     modified_text_object = None
 
     shift_key_advice = ' (Use SHIFT key to select center of element)'
@@ -685,8 +686,9 @@ class Draw(AppShell.AppShell):
             self.launch_calc()
             self.calculator.putx(dist)
 
-    def txt_params(self):
+    def txt_params(self, obj=None):
         self.op = 'txt_params'
+
         if not self.obj_stack and not self.modified_text_object:
             self.updateMessageBar('Pick text to modify')
             self.set_sel_mode('items')
@@ -710,6 +712,7 @@ class Draw(AppShell.AppShell):
             self.text_gen(self.modified_text_object)
             self.modified_text_object = None
             self.regen()
+
 
     def itemcoords(self, obj=None):
         """Print coordinates (in ECS) of selected element."""
@@ -2209,7 +2212,7 @@ class Draw(AppShell.AppShell):
         elif self.pt_stack:
             p = self.pt_stack.pop()
             attribs = (p, self.text, self.textstyle,
-                       self.textsize, textcolor)
+                       self.textsize, self.textcolor)
             tx = entities.TX(attribs)
             self.text_gen(tx)
             self.text = None

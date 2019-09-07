@@ -24,9 +24,10 @@ class TxtDialog(Toplevel):
         self.title('Text Parameters')
         self.protocol("WM_DELETE_WINDOW", self.quit)
         self.resizable(width=0, height=0)
+        self.coords = None
         if caller:
             self.transient(caller)
-        
+
         but(self, 'Style', 0, 0, lambda r='t': self.pr(r), clr='dimgray')
         but(self, 'Size', 1, 0, lambda r='z': self.pr(r), clr='dimgray')
         but(self, 'Color', 2, 0, lambda r='y': self.pr(r), clr='dimgray')
@@ -41,7 +42,9 @@ class TxtDialog(Toplevel):
         ent(self, self.ydisplay, 2)
         ent(self, self.xdisplay, 3)
 
-        but(self, 'Change Dim Parameters', 4, 0, self.mm2in, span=12, clr='dimgray')
+        but(self, 'Get Default Params', 4, 0, self.get_default, span=6, clr='dimgray')
+        but(self, 'Set Default Params', 4, 6, self.set_default, span=6, clr='dimgray')
+        but(self, 'Change Parameters of Selected Text', 5, 0, self.change, span=12, clr='dimgray')
         
 
     def quit(self):
@@ -49,15 +52,30 @@ class TxtDialog(Toplevel):
             self.caller.txtdialog = None
         self.destroy()
 
-    def mm2in(self):  # save modified text object to caller
+    def change(self):  # save modified text object to caller
+        # attribs = (coords, text, style, size, color)
         attribs = (self.coords,
                    self.xdisplay.get().strip("'"),
                    self.tdisplay.get().strip("'"),
                    int(float(self.zdisplay.get().strip("'"))),
                    self.ydisplay.get().strip("'"))
-        print(attribs)
         tx = entities.TX(attribs)
         self.caller.modified_text_object = tx
+
+    def get_default(self):
+        color = self.caller.textcolor
+        style = self.caller.textstyle
+        size = self.caller.textsize
+        text = ""
+        self.putx(text)
+        self.puty(color)
+        self.putz(size)
+        self.putt(style)
+
+    def set_default(self):
+        self.caller.textstyle = self.tdisplay.get().strip("'")
+        self.caller.textsize = int(float(self.zdisplay.get().strip("'")))
+        self.caller.textcolor = self.ydisplay.get().strip("'")
 
     def putx(self, value):
         self.xdisplay.set(repr(value))
