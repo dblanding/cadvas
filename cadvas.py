@@ -692,6 +692,9 @@ class Draw(AppShell.AppShell):
             self.updateMessageBar('Pick text to modify')
             self.set_sel_mode('items')
         elif self.obj_stack and not self.modified_text_object:
+            msg = "Use editor to modify parameters, then click 'Change Parameters'"
+            self.updateMessageBar(msg)
+            self.set_sel_mode('')
             self.handle = self.obj_stack.pop()[0]
             ent = self.curr[self.handle]
             if ent.type is 'tx':
@@ -854,8 +857,8 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Text', 'command', 'Edit Text',
                                  label='Edit text',
                                  command=self.txt_params)
-        self.menuBar.addmenuitem('Text', 'command', 'Editor',
-                                 label='Editor',
+        self.menuBar.addmenuitem('Text', 'command', 'Parameter Editor',
+                                 label='Parameter Editor',
                                  command=self.launch_txtdialog)
         self.menuBar.addmenu('Delete', 'Delete drawing elements')
         self.menuBar.addmenuitem('Delete', 'command',

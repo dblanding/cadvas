@@ -11,12 +11,18 @@ def ent(root, var, row, col=2, span=10):
     e = Entry(root, textvariable=var, relief=SUNKEN)
     e.grid(row=row, column=col, columnspan=span)
 
+def lbx(root, var, row, col=2, span=10):
+    opt = OptionMenu(root, var, 'Arial', 'Calibri', 'Courier','Helvetica',
+                     'Symbol', 'Times', 'Verdana')
+    var.set('Arial')
+    opt.grid(row=row, column=col, columnspan=span)
+
 def f2s(f):
     """Convert float to string with 12 significant figures."""
     return '%1.12f' % f
 
 class TxtDialog(Toplevel):
-    """Dimension dialog for editing dimension parameters."""
+    """Dialog for editing text parameters."""
     
     def __init__(self, caller=None):
         Toplevel.__init__(self)
@@ -27,26 +33,29 @@ class TxtDialog(Toplevel):
         self.coords = None
         if caller:
             self.transient(caller)
-
-        but(self, 'Style', 0, 0, lambda r='t': self.pr(r), clr='darkgreen')
-        but(self, 'Size', 1, 0, lambda r='z': self.pr(r), clr='darkgreen')
-        but(self, 'Color', 2, 0, lambda r='y': self.pr(r), clr='darkgreen')
-        but(self, 'Text', 3, 0, lambda r='x': self.pr(r), clr='darkgreen')
-
+        self.font = StringVar()
         self.tdisplay = StringVar()
         self.zdisplay = StringVar()
         self.ydisplay = StringVar()
         self.xdisplay = StringVar()
-        ent(self, self.tdisplay, 0)
-        ent(self, self.zdisplay, 1)
-        ent(self, self.ydisplay, 2)
-        ent(self, self.xdisplay, 3)
+        
+        but(self, 'Fonts', 0, 0, lambda r='u': self.sel_font(r), clr='darkgreen')
+        but(self, 'Style', 1, 0, lambda r='t': self.pr(r), clr='darkgreen')
+        but(self, 'Size', 2, 0, lambda r='z': self.pr(r), clr='darkgreen')
+        but(self, 'Color', 3, 0, lambda r='y': self.pr(r), clr='darkgreen')
+        but(self, 'Text', 4, 0, lambda r='x': self.pr(r), clr='darkgreen')
 
-        but(self, 'Get Default Params', 4, 0, self.get_default, span=6,
+        lbx(self, self.font, 0)
+        ent(self, self.tdisplay, 1)
+        ent(self, self.zdisplay, 2)
+        ent(self, self.ydisplay, 3)
+        ent(self, self.xdisplay, 4)
+
+        but(self, 'Get Default Params', 5, 0, self.get_default, span=6,
             clr='darkblue')
-        but(self, 'Set Default Params', 4, 6, self.set_default, span=6,
+        but(self, 'Set Default Params', 5, 6, self.set_default, span=6,
             clr='darkblue')
-        but(self, 'Change Parameters of Selected Text', 5, 0, self.change,
+        but(self, 'Change Parameters of Selected Text', 6, 0, self.change,
             span=12, clr='darkgoldenrod')
         
 
@@ -54,6 +63,10 @@ class TxtDialog(Toplevel):
         if self.caller:
             self.caller.txtdialog = None
         self.destroy()
+
+    def sel_font(self, foo):
+        self.putt(self.font.get())
+        print("Chosen font: ", self.font.get())
 
     def pr(self, val):
         pass
