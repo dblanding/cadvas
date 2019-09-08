@@ -39,7 +39,7 @@ class TxtDialog(Toplevel):
         self.ydisplay = StringVar()
         self.xdisplay = StringVar()
         
-        but(self, 'Fonts', 0, 0, lambda r='u': self.sel_font(r), clr='darkgreen')
+        but(self, 'Copy Font to Style', 0, 0, lambda r='u': self.sel_font(r), clr='darkgreen')
         but(self, 'Style', 1, 0, lambda r='t': self.pr(r), clr='darkgreen')
         but(self, 'Size', 2, 0, lambda r='z': self.pr(r), clr='darkgreen')
         but(self, 'Color', 3, 0, lambda r='y': self.pr(r), clr='darkgreen')
@@ -80,6 +80,7 @@ class TxtDialog(Toplevel):
                    self.ydisplay.get().strip("'"))
         tx = entities.TX(attribs)
         self.caller.modified_text_object = tx
+        print('d')
 
     def get_default(self):
         color = self.caller.textcolor

@@ -694,8 +694,10 @@ class Draw(AppShell.AppShell):
         elif self.obj_stack and not self.modified_text_object:
             msg = "Use editor to modify parameters, then click 'Change Parameters'"
             self.updateMessageBar(msg)
-            self.set_sel_mode('')
+            self.set_sel_mode('pnt')  # keep mouseMove calling func
             self.handle = self.obj_stack.pop()[0]
+            self.obj_stack = []
+            print("handle of text to change: ", self.handle)
             ent = self.curr[self.handle]
             if ent.type is 'tx':
                 self.launch_txtdialog()
@@ -705,13 +707,15 @@ class Draw(AppShell.AppShell):
                 self.txtdialog.putt(ent.style)
                 self.txtdialog.coords = ent.coords
         elif self.modified_text_object:
+            print("new object: ", self.modified_text_object)
             try:
+                self.text_gen(self.modified_text_object)
                 self.canvas.delete(self.handle)
                 del self.curr[self.handle]
                 del self.handle
-                self.text_gen(self.modified_text_object)
             except AttributeError:
                 print("Select text first, then click 'Change Parameters'")
+                del self.handle
             self.modified_text_object = None
             self.regen()
 
@@ -878,6 +882,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Delete', 'command', 'Delete all',
                                  label='Delete All', command=self.del_all)
         self.menuBar.addmenu('Debug', 'Debug')
+        self.menuBar.addmenuitem('Debug', 'command', 'Show self.op',
+                                 label='Show self.op',
+                                 command=self.show_op)
         self.menuBar.addmenuitem('Debug', 'command', 'Show Curr',
                                  label='Show Curr',
                                  command=lambda k='show_curr':self.dispatch(k))
@@ -971,6 +978,9 @@ class Draw(AppShell.AppShell):
     #=======================================================================
     # Debug Tools
     #=======================================================================
+
+    def show_op(self):
+        print(self.op)
 
     def show_curr(self):
         pprint.pprint(self.curr)
