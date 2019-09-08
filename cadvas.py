@@ -688,15 +688,12 @@ class Draw(AppShell.AppShell):
 
     def txt_params(self, obj=None):
         self.op = 'txt_params'
-
         if not self.obj_stack and not self.modified_text_object:
             self.updateMessageBar('Pick text to modify')
             self.set_sel_mode('items')
         elif self.obj_stack and not self.modified_text_object:
             self.handle = self.obj_stack.pop()[0]
-            print(str(self.handle))
             ent = self.curr[self.handle]
-            print(ent)
             if ent.type is 'tx':
                 self.launch_txtdialog()
                 self.txtdialog.putx(ent.text)
@@ -705,11 +702,13 @@ class Draw(AppShell.AppShell):
                 self.txtdialog.putt(ent.style)
                 self.txtdialog.coords = ent.coords
         elif self.modified_text_object:
-            print(self.modified_text_object.get_attribs())
-            self.canvas.delete(self.handle)
-            del self.curr[self.handle]
-            del self.handle
-            self.text_gen(self.modified_text_object)
+            try:
+                self.canvas.delete(self.handle)
+                del self.curr[self.handle]
+                del self.handle
+                self.text_gen(self.modified_text_object)
+            except AttributeError:
+                print("try again")
             self.modified_text_object = None
             self.regen()
 
@@ -855,6 +854,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Text', 'command', 'Edit Text',
                                  label='Edit text',
                                  command=self.txt_params)
+        self.menuBar.addmenuitem('Text', 'command', 'Editor',
+                                 label='Editor',
+                                 command=self.launch_txtdialog)
         self.menuBar.addmenu('Delete', 'Delete drawing elements')
         self.menuBar.addmenuitem('Delete', 'command',
                                  'Delete individual element',

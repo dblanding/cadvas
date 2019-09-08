@@ -28,10 +28,10 @@ class TxtDialog(Toplevel):
         if caller:
             self.transient(caller)
 
-        but(self, 'Style', 0, 0, lambda r='t': self.pr(r), clr='dimgray')
-        but(self, 'Size', 1, 0, lambda r='z': self.pr(r), clr='dimgray')
-        but(self, 'Color', 2, 0, lambda r='y': self.pr(r), clr='dimgray')
-        but(self, 'Text', 3, 0, lambda r='x': self.pr(r), clr='dimgray')
+        but(self, 'Style', 0, 0, lambda r='t': self.pr(r), clr='darkgreen')
+        but(self, 'Size', 1, 0, lambda r='z': self.pr(r), clr='darkgreen')
+        but(self, 'Color', 2, 0, lambda r='y': self.pr(r), clr='darkgreen')
+        but(self, 'Text', 3, 0, lambda r='x': self.pr(r), clr='darkgreen')
 
         self.tdisplay = StringVar()
         self.zdisplay = StringVar()
@@ -42,9 +42,12 @@ class TxtDialog(Toplevel):
         ent(self, self.ydisplay, 2)
         ent(self, self.xdisplay, 3)
 
-        but(self, 'Get Default Params', 4, 0, self.get_default, span=6, clr='dimgray')
-        but(self, 'Set Default Params', 4, 6, self.set_default, span=6, clr='dimgray')
-        but(self, 'Change Parameters of Selected Text', 5, 0, self.change, span=12, clr='dimgray')
+        but(self, 'Get Default Params', 4, 0, self.get_default, span=6,
+            clr='darkblue')
+        but(self, 'Set Default Params', 4, 6, self.set_default, span=6,
+            clr='darkblue')
+        but(self, 'Change Parameters of Selected Text', 5, 0, self.change,
+            span=12, clr='darkgoldenrod')
         
 
     def quit(self):
