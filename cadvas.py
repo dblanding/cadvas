@@ -708,7 +708,7 @@ class Draw(AppShell.AppShell):
                 del self.handle
                 self.text_gen(self.modified_text_object)
             except AttributeError:
-                print("try again")
+                print("Select text first, then click 'Change Parameters'")
             self.modified_text_object = None
             self.regen()
 

@@ -55,6 +55,9 @@ class TxtDialog(Toplevel):
             self.caller.txtdialog = None
         self.destroy()
 
+    def pr(self, val):
+        pass
+
     def change(self):  # save modified text object to caller
         # attribs = (coords, text, style, size, color)
         attribs = (self.coords,
