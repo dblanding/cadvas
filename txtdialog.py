@@ -17,9 +17,6 @@ def lbx(root, var, row, col=2, span=10):
     var.set('Arial')
     opt.grid(row=row, column=col, columnspan=span)
 
-def f2s(f):
-    """Convert float to string with 12 significant figures."""
-    return '%1.12f' % f
 
 class TxtDialog(Toplevel):
     """Dialog for editing text parameters."""
@@ -80,7 +77,6 @@ class TxtDialog(Toplevel):
                    self.ydisplay.get().strip("'"))
         tx = entities.TX(attribs)
         self.caller.modified_text_object = tx
-        print('d')
 
     def get_default(self):
         color = self.caller.textcolor

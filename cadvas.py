@@ -27,7 +27,6 @@ import pickle
 import os
 from   tkinter import *
 from   tkinter.filedialog import *
-import Pmw
 from   zooming import Zooming
 import AppShell
 from   toolbarbutton import ToolBarButton
@@ -726,9 +725,12 @@ class Draw(AppShell.AppShell):
             self.updateMessageBar('Pick element from drawing.')
             self.set_sel_mode('items')
         elif self.obj_stack:
-            elem = self.obj_stack.pop()[0]
-            x1, y1, x2, y2 = self.canvas.coords(elem)
-            print(self.cp2ep((x1, y1)), self.cp2ep((x2, y2)))
+            elem = self.obj_stack.pop()
+            if 'g' in self.canvas.gettags(elem):
+                x1, y1, x2, y2 = self.canvas.coords(elem)
+                print(self.cp2ep((x1, y1)), self.cp2ep((x2, y2)))
+            else:
+                print("This works only for 'geometry type' elements")
 
     def itemlength(self, obj=None):
         """Print length (in current units) of selected line, circle, or arc."""
