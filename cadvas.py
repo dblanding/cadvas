@@ -1045,8 +1045,8 @@ class Draw(AppShell.AppShell):
                 attribs = (cline, constrcolor)
                 e = entities.CL(attribs)
                 self.curr[handle] = e
-            if not regen:
-                self.cl_list.append(cline)
+                if not regen:
+                    self.cl_list.append(cline)
 
     def regen_all_cl(self, event=None):
         """Delete existing clines, remove them from self.curr, and regenerate
@@ -2294,11 +2294,14 @@ class Draw(AppShell.AppShell):
         if self.obj_stack:
             item_tuple = self.obj_stack.pop()
             for item in item_tuple:
+                tags = self.canvas.gettags(item)
                 if item in self.curr:
+                    e = self.curr[item]
+                    if e.type is 'cl':
+                        self.cl_list.remove(e.coords)
                     del self.curr[item]
                     self.canvas.delete(item)
                 else:
-                    tags = self.canvas.gettags(item)
                     if 'd' in tags:
                         dgid = tags[1]
                         dim_items = self.canvas.find_withtag(dgid)
@@ -2314,6 +2317,7 @@ class Draw(AppShell.AppShell):
             del self.curr[k]
         for item in self.canvas.find_withtag('c'):
             self.canvas.delete(item)
+        self.cl_list = []
              
     def del_all_g(self):
         '''Delete all geometry.'''
@@ -2353,6 +2357,7 @@ class Draw(AppShell.AppShell):
         
         self.curr.clear()
         self.canvas.delete(ALL)
+        self.cl_list = []
         
 
     #=======================================================================
