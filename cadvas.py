@@ -478,6 +478,7 @@ class Draw(AppShell.AppShell):
     textstyle = 'Calibri'   # default text style
     textcolor = textcolor
     modified_text_object = None
+    cl_list = []        # list of all cline coords (so they don't get lost)
 
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
@@ -1014,10 +1015,8 @@ class Draw(AppShell.AppShell):
     # circles are defined by coordinates:   (pc, r)
     #=======================================================================
 
-    def cline_gen(self, cline, rubber=0):
-        '''Generate infinite length clines .
-
-        cline coords (a,b,c) are in ECS (mm) values.'''
+    def cline_gen(self, cline, rubber=0, regen=False):
+        '''Generate clines from coords (a,b,c) in ECS (mm) values.'''
         
         # extend clines 500 canvas units beyond edge of canvas
         w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
@@ -1046,6 +1045,8 @@ class Draw(AppShell.AppShell):
                 attribs = (cline, constrcolor)
                 e = entities.CL(attribs)
                 self.curr[handle] = e
+            if not regen:
+                self.cl_list.append(cline)
 
     def regen_all_cl(self, event=None):
         """Delete existing clines, remove them from self.curr, and regenerate
@@ -1057,12 +1058,11 @@ class Draw(AppShell.AppShell):
         the canvas, so we need a way to keep them from getting lost."""
         
         cl_keylist = [k for k, v in self.curr.items() if v.type is 'cl']
-        cl_list = [v.coords for v in self.curr.values() if v.type is 'cl']
         for handle in cl_keylist:
             self.canvas.delete(handle)
             del self.curr[handle]
-        for cline in cl_list:
-            self.cline_gen(cline)
+        for cline in self.cl_list:
+            self.cline_gen(cline, regen=True)
 
     def hcl(self, pnt=None):
         """Create horizontal construction line from one point or y value."""
