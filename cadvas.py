@@ -2446,13 +2446,10 @@ class Draw(AppShell.AppShell):
     4. copy of curr is saved to prev.
 
     Typically, after clicking undo / redo buttons one or more times,
-    the user will resume running operations that create, modify or
-    delete CAD data. Once these operations resume, the data on the redo
-    stack may no longer be relevant and ought to be discarded.
-    For now, there is a button under the edit menu that allows the user
-    to manually clear the redo stack.
-
-    ToDo: Figure out how best to clear the redo_stack automatically.
+    the user will resume running CAD operations that create, modify or
+    delete CAD data. Once CAD operations are resumed, the data on the
+    redo stack is no longer relevant and is discarded. Thus, when the
+    save_delta method runs, the redo stack is emptied.
     """
 
     def save_delta(self):
@@ -2465,6 +2462,7 @@ class Draw(AppShell.AppShell):
                 delta = {'+': plus, '-': minus}
                 self.undo_stack.append(delta)
                 self.prev = self.curr.copy()
+                self.clear_redo()
 
     def undo(self):
         """Pop data off undo, push onto redo, update curr, copy to prev."""
