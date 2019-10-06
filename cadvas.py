@@ -40,8 +40,8 @@ date = 'Sept 5, 2019'
 
 geomcolor = 'white'     # color of geometry entities
 constrcolor = 'magenta' # color of construction entities
-textcolor = 'cyan'      # text color
-dimcolor = 'red'        # dimension color
+textcolor = 'cyan'      # color of text entities
+dimcolor = 'red'        # color of dimension entities
 rubbercolor = 'yellow'  # color of (temporary) rubber elements
 
 #===========================================================================
@@ -788,6 +788,8 @@ class Draw(AppShell.AppShell):
         Widget.bind(self.canvas, "<Button-1>", self.lftClick)
         Widget.bind(self.canvas, "<Button-2>", self.midClick)
         Widget.bind(self.canvas, "<Button-3>", self.rgtClick)
+        self.root.bind("<Control-z>", self.undo)
+        self.root.bind("<Control-y>", self.redo)
         self.root.bind("<Key>", self.setCC)
         self.root.bind("<KeyRelease>", self.setCC)
         self.root.bind("<Control-B1-ButtonRelease>", self.regen_all_cl)
@@ -812,9 +814,9 @@ class Draw(AppShell.AppShell):
                                  label='Exit', command=self.quit)
         self.menuBar.addmenu('Edit', 'Undo / Redo')
         self.menuBar.addmenuitem('Edit', 'command', 'Undo',
-                                 label='Undo', command=self.undo)
+                                 label='Undo (Ctrl+Z)', command=self.undo)
         self.menuBar.addmenuitem('Edit', 'command', 'Redo',
-                                 label='Redo', command=self.redo)
+                                 label='Redo (Ctrl+Y)', command=self.redo)
         self.menuBar.addmenuitem('Edit', 'command', 'Clear Redo',
                                  label='Clr Redo', command=self.clear_redo)
         self.menuBar.addmenuitem('Edit', 'command', 'Clear Undo',
@@ -2464,7 +2466,7 @@ class Draw(AppShell.AppShell):
                 self.prev = self.curr.copy()
                 self.clear_redo()
 
-    def undo(self):
+    def undo(self, event=None):
         """Pop data off undo, push onto redo, update curr, copy to prev."""
         
         self.end()
@@ -2479,9 +2481,10 @@ class Draw(AppShell.AppShell):
         else:
             print("No more Undo steps available.")
 
-    def redo(self):
+    def redo(self, event=None):
         """Pop data off redo, push onto undo, update curr, copy to prev."""
 
+        self.end()
         if self.redo_stack:
             redo_data = self.redo_stack.pop()
             self.undo_stack.append(redo_data)
