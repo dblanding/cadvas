@@ -55,7 +55,6 @@ class TxtDialog(Toplevel):
         but(self, 'Change Parameters of Selected Text', 6, 0, self.change,
             span=12, clr='darkgoldenrod')
         
-
     def quit(self):
         if self.caller:
             self.caller.txtdialog = None
@@ -77,6 +76,7 @@ class TxtDialog(Toplevel):
                    self.ydisplay.get().strip("'"))
         tx = entities.TX(attribs)
         self.caller.modified_text_object = tx
+        self.quit()
 
     def get_default(self):
         color = self.caller.textcolor

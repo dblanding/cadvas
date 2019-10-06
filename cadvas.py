@@ -35,8 +35,8 @@ import txtdialog
 import entities
 import pprint
 
-version = '0.5.1'
-date = 'Sept 5, 2019'
+version = '0.5.2'
+date = 'Oct 6, 2019'
 
 geomcolor = 'white'     # color of geometry entities
 constrcolor = 'magenta' # color of construction entities
@@ -686,40 +686,6 @@ class Draw(AppShell.AppShell):
             self.launch_calc()
             self.calculator.putx(dist)
 
-    def txt_params(self, obj=None):
-        self.op = 'txt_params'
-        if not self.obj_stack and not self.modified_text_object:
-            self.updateMessageBar('Pick text to modify')
-            self.set_sel_mode('items')
-        elif self.obj_stack and not self.modified_text_object:
-            msg = "Use editor to modify parameters, then click 'Change Parameters'"
-            self.updateMessageBar(msg)
-            self.set_sel_mode('pnt')  # keep mouseMove calling func
-            self.handle = self.obj_stack.pop()[0]
-            self.obj_stack = []
-            print("handle of text to change: ", self.handle)
-            ent = self.curr[self.handle]
-            if ent.type is 'tx':
-                self.launch_txtdialog()
-                self.txtdialog.putx(ent.text)
-                self.txtdialog.puty(ent.color)
-                self.txtdialog.putz(ent.size)
-                self.txtdialog.putt(ent.style)
-                self.txtdialog.coords = ent.coords
-        elif self.modified_text_object:
-            print("new object: ", self.modified_text_object)
-            try:
-                self.text_gen(self.modified_text_object)
-                self.canvas.delete(self.handle)
-                del self.curr[self.handle]
-                del self.handle
-            except AttributeError:
-                print("Select text first, then click 'Change Parameters'")
-                del self.handle
-            self.modified_text_object = None
-            self.regen()
-
-
     def itemcoords(self, obj=None):
         """Print coordinates (in ECS) of selected element."""
         if not self.obj_stack:
@@ -764,11 +730,6 @@ class Draw(AppShell.AppShell):
         if not self.calculator:
             self.calculator = tkrpncalc.Calculator(self)
             self.calculator.geometry('+800+50')
-
-    def launch_txtdialog(self):
-        if not self.txtdialog:
-            self.txtdialog = txtdialog.TxtDialog(self)
-            self.txtdialog.geometry('+1000+500')
 
     #=======================================================================
     # GUI configuration
@@ -866,9 +827,6 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Text', 'command', 'Edit Text',
                                  label='Edit text',
                                  command=self.txt_params)
-        self.menuBar.addmenuitem('Text', 'command', 'Parameter Editor',
-                                 label='Parameter Editor',
-                                 command=self.launch_txtdialog)
         self.menuBar.addmenu('Delete', 'Delete drawing elements')
         self.menuBar.addmenuitem('Delete', 'command',
                                  'Delete individual element',
@@ -2201,7 +2159,7 @@ class Draw(AppShell.AppShell):
         self.curr[handle] = tx
 
     def regen_all_text(self, event=None):
-        """Delete all existing text, clear tx_dict, and regenerate.
+        """Delete all existing text and regenerate.
 
         This needs to be done after zoom because text size is defined
         in terms of canvas pixels and doesn't change size with zoom."""
@@ -2283,6 +2241,44 @@ class Draw(AppShell.AppShell):
                 del self.rubber_tx
             self.regen_all_text()
             
+    def txt_params(self, obj=None):
+        self.op = 'txt_params'
+        if not self.obj_stack and not self.modified_text_object:
+            self.updateMessageBar('Pick text to modify')
+            self.set_sel_mode('items')
+        elif self.obj_stack and not self.modified_text_object:
+            msg = "Use editor to modify parameters, then click 'Change Parameters'"
+            self.updateMessageBar(msg)
+            self.set_sel_mode('pnt')  # keep mouseMove calling func
+            self.handle = self.obj_stack.pop()[0]
+            self.obj_stack = []
+            print("handle of text to change: ", self.handle)
+            ent = self.curr[self.handle]
+            if ent.type is 'tx':
+                self.launch_txtdialog()
+                self.txtdialog.putx(ent.text)
+                self.txtdialog.puty(ent.color)
+                self.txtdialog.putz(ent.size)
+                self.txtdialog.putt(ent.style)
+                self.txtdialog.coords = ent.coords
+        elif self.modified_text_object:
+            print("new object: ", self.modified_text_object)
+            try:
+                self.text_gen(self.modified_text_object)
+                self.canvas.delete(self.handle)
+                del self.curr[self.handle]
+                del self.handle
+            except AttributeError:
+                print("Select text first, then click 'Change Parameters'")
+                del self.handle
+            self.modified_text_object = None
+            self.regen()
+
+    def launch_txtdialog(self):
+        if not self.txtdialog:
+            self.txtdialog = txtdialog.TxtDialog(self)
+            self.txtdialog.geometry('+1000+500')
+
     #=======================================================================
     # Delete
     #=======================================================================
