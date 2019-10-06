@@ -232,7 +232,7 @@ class Zooming(Canvas):
     def w2c_dy(self,dy): return self.world2canvas_vector(0,dy)[1]
 
     def panbindings(self):
-        """arranges for ctrl-LMB to pan the canvas like me10"""
+        """Ctrl-LMB used to pan the canvas like me10"""
         def press(self,ev):
             self.lastmouse=Pair(ev.x,ev.y)
         def motion(self,ev):
@@ -246,7 +246,7 @@ class Zooming(Canvas):
         #self.bind("<Control-B1-ButtonRelease>",lambda ev: release(self,ev))
         
     def zoombindings(self):
-        """arranges for ctrl-RMB to zoom the canvas like me10"""
+        """Ctrl-RMB to zoom the canvas like me10"""
         
         def press(self,ev):
             self.firstmouse=Pair(ev.x,ev.y)

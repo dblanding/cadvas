@@ -2479,7 +2479,7 @@ class Draw(AppShell.AppShell):
                 self.add_draw(item)
             self.prev = self.curr.copy()
         else:
-            print("No more Undo steps available.")
+            print("No Undo steps available.")
 
     def redo(self, event=None):
         """Pop data off redo, push onto undo, update curr, copy to prev."""
@@ -2494,7 +2494,7 @@ class Draw(AppShell.AppShell):
                 self.rem_draw(item)
             self.prev = self.curr.copy()
         else:
-            print("No more Redo steps available.")
+            print("No Redo steps available.")
 
     def add_draw(self, entity):
         """Add entity to current drawing."""
