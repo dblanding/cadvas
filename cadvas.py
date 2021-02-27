@@ -482,6 +482,7 @@ class Draw(AppShell.AppShell):
 
     shift_key_advice = ' (Use SHIFT key to select center of element)'
     unit_dict = {'mm': 1.0,
+                 'cm': 10.0,
                  'inches': 25.4,
                  'feet': 304.8}
     units = 'mm'
@@ -789,6 +790,9 @@ class Draw(AppShell.AppShell):
         self.menuBar.addmenuitem('Units', 'command', 'Set units=mm',
                                  label='mm',
                                  command=lambda k='mm': self.set_units(k))
+        self.menuBar.addmenuitem('Units', 'command', 'Set units=cm',
+                                 label='cm',
+                                 command=lambda k='cm': self.set_units(k))
         self.menuBar.addmenuitem('Units', 'command', 'Set units=inches',
                                  label='inches',
                                  command=lambda k='inches': self.set_units(k))
