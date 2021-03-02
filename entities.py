@@ -67,7 +67,7 @@ class GL:
     """Geometry Line object initialized with a tuple of attributes.
 
     attribs = (coords, color)
-    coords = (a, b, c)
+    coords = ((x1, y1), (x2, y2))
     """
 
     def __init__(self, attribs):
